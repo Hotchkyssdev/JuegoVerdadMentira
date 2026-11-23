@@ -1,10 +1,12 @@
 package verdadmentira.view;
 
+import verdadmentira.domain.Afirmacion;
 import verdadmentira.domain.ArbolDecisiones;
 import verdadmentira.domain.Personaje;
 import verdadmentira.service.Juego;
 import verdadmentira.view.component.Avatar;
 import verdadmentira.view.component.Boton;
+import verdadmentira.view.component.Burbuja;
 import verdadmentira.view.component.PanelArbol;
 import verdadmentira.view.style.Estilo;
 
@@ -35,6 +37,8 @@ import java.util.Map;
 
 public class VentanaJuego extends JFrame {
     private static final int PISTAS_POR_PARTIDA = 3;
+
+    private record PasoDePractica(String texto, Boolean juan, Boolean rita, Boolean sofia, boolean contradiccion) { }
 
     private final Map<Personaje, Boolean> marcas = new LinkedHashMap<>();
     private Timer animacion;
@@ -128,11 +132,14 @@ public class VentanaJuego extends JFrame {
 
         Boton reglas = new Boton("Cómo se juega", Estilo.TINTA_SUAVE, false);
         reglas.addActionListener(e -> mostrarReglas());
+        Boton practicar = new Boton("Practicar primero", Estilo.TINTA_SUAVE, false);
+        practicar.addActionListener(e -> mostrarPractica(0));
         Boton empezar = new Boton("Empezar", Estilo.PRINCIPAL, true);
         empezar.addActionListener(e -> mostrarRonda());
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         botones.setOpaque(false);
         botones.add(reglas);
+        botones.add(practicar);
         botones.add(empezar);
 
         JPanel centro = new JPanel();
@@ -155,6 +162,91 @@ public class VentanaJuego extends JFrame {
         centro.add(botones);
         centro.add(Box.createVerticalGlue());
         pantalla.add(centro, BorderLayout.CENTER);
+        mostrar(pantalla);
+    }
+
+    private void mostrarPractica(int paso) {
+        pantallaActual = () -> mostrarPractica(paso);
+        enInicio = false;
+        List<Personaje> personajes = juego.getPersonajes();
+        Personaje juan = personajes.get(0);
+        Personaje rita = personajes.get(1);
+        Personaje sofia = personajes.get(3);
+        String j = Estilo.nombreHtml(juan);
+        String r = Estilo.nombreHtml(rita);
+        String s = Estilo.nombreHtml(sofia);
+        PasoDePractica[] pasos = {
+                new PasoDePractica("Acá hay tres personajes y cada uno dice una frase. Hay una sola forma de marcarlos "
+                        + "en la que todas las frases cierran. Vamos a encontrarla paso a paso.", null, null, null, false),
+                new PasoDePractica("Probemos una suposición: <b>" + j + " miente</b>.", false, null, null, false),
+                new PasoDePractica("Si " + j + " miente, su frase es falsa. Dijo «" + r + " dice la verdad», "
+                        + "así que <b>" + r + " miente</b>.", false, false, null, false),
+                new PasoDePractica(r + " miente, así que su frase también es falsa. Dijo «" + s + " miente», "
+                        + "entonces <b>" + s + " dice la verdad</b>.", false, false, true, false),
+                new PasoDePractica(s + " dice la verdad, así que su frase es cierta: «" + j + " dice la verdad, pero " + r + " no». "
+                        + "¡Pero habíamos supuesto que " + j + " miente! Es una <b>contradicción</b>: la suposición estaba mal.",
+                        false, false, true, true),
+                new PasoDePractica("Entonces <b>" + j + " dice la verdad</b>. Su frase es cierta, así que "
+                        + "<b>" + r + " dice la verdad</b>.", true, true, null, false),
+                new PasoDePractica(r + " dice la verdad, así que «" + s + " miente» es cierto: <b>" + s + " miente</b>.",
+                        true, true, false, false),
+                new PasoDePractica("Comprobemos: " + s + " miente, así que su frase tiene que ser falsa. «" + j + " dice la verdad, pero "
+                        + r + " no» es falsa, porque " + r + " dice la verdad. <b>Todo cierra.</b><br><br>"
+                        + "En el juego son cinco personajes y tres rondas, y uno de ellos cambia de una ronda a otra: "
+                        + "encontrarlo es el objetivo.", true, true, false, false)
+        };
+        PasoDePractica actual = pasos[paso];
+
+        JPanel pantalla = pantalla("Práctica", "Paso " + (paso + 1) + " de " + pasos.length
+                + ". Así se razona una ronda: se supone algo y se sigue hasta que todo cierre o aparezca una contradicción.", Estilo.TINTA);
+
+        Afirmacion fraseDeJuan = new Afirmacion(juan, List.of(new Afirmacion.Referencia(rita, true)));
+        Afirmacion fraseDeRita = new Afirmacion(rita, List.of(new Afirmacion.Referencia(sofia, false)));
+        Afirmacion fraseDeSofia = new Afirmacion(sofia, List.of(
+                new Afirmacion.Referencia(juan, true), new Afirmacion.Referencia(rita, false)));
+
+        JPanel columnas = new JPanel(new GridLayout(1, 3, 24, 0));
+        columnas.setOpaque(false);
+        Afirmacion[] frases = {fraseDeJuan, fraseDeRita, fraseDeSofia};
+        Boolean[] marcasDelPaso = {actual.juan(), actual.rita(), actual.sofia()};
+        for (int i = 0; i < frases.length; i++) {
+            Burbuja burbuja = new Burbuja(frases[i]);
+            if (actual.contradiccion() && frases[i] == fraseDeSofia) burbuja.setAviso("Esto contradice lo que supusimos.");
+            Avatar avatar = new Avatar(frases[i].getEmisor(), 110, true);
+            avatar.setMarca(marcasDelPaso[i]);
+            JPanel contenedorAvatar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+            contenedorAvatar.setOpaque(false);
+            contenedorAvatar.add(avatar);
+            JPanel columna = new JPanel(new BorderLayout(0, 4));
+            columna.setOpaque(false);
+            columna.add(burbuja, BorderLayout.NORTH);
+            columna.add(contenedorAvatar, BorderLayout.CENTER);
+            columnas.add(columna);
+        }
+
+        JLabel explicacion = new JLabel("<html><div style='width:900px'>" + actual.texto() + "</div></html>");
+        explicacion.setFont(Estilo.FRASE);
+        explicacion.setForeground(Estilo.TINTA);
+
+        JPanel centro = new JPanel(new BorderLayout(0, 24));
+        centro.setOpaque(false);
+        centro.add(columnas, BorderLayout.NORTH);
+        centro.add(tarjeta(explicacion), BorderLayout.CENTER);
+        JPanel envoltorio = new JPanel(new BorderLayout());
+        envoltorio.setOpaque(false);
+        envoltorio.add(centro, BorderLayout.NORTH);
+        pantalla.add(envoltorio, BorderLayout.CENTER);
+
+        Boton anterior = new Boton("Anterior", Estilo.TINTA_SUAVE, false);
+        anterior.setEnabled(paso > 0);
+        anterior.addActionListener(e -> mostrarPractica(paso - 1));
+        boolean ultimo = paso == pasos.length - 1;
+        Boton siguiente = new Boton(ultimo ? "Empezar a jugar" : "Siguiente", Estilo.PRINCIPAL, true);
+        siguiente.addActionListener(e -> {
+            if (ultimo) mostrarRonda();
+            else mostrarPractica(paso + 1);
+        });
+        pantalla.add(pie(null, anterior, siguiente), BorderLayout.SOUTH);
         mostrar(pantalla);
     }
 
