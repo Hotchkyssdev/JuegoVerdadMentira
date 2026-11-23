@@ -1,3 +1,5 @@
+package verdadmentira.service;
+
 import java.util.Random;
 
 public class CadenaMarkov {
@@ -49,4 +51,4 @@ public class CadenaMarkov {
     public boolean getEstadoActual() {
         return estadoActual;
     }
-}
+}

@@ -1,3 +1,11 @@
+package verdadmentira.service;
+
+import verdadmentira.domain.Afirmacion;
+import verdadmentira.domain.ArbolDecisiones;
+import verdadmentira.domain.GrafoPersonajes;
+import verdadmentira.domain.Personaje;
+import verdadmentira.enumeration.TipoDePersonaje;
+
 import java.util.*;
 
 public class Juego {
@@ -22,11 +30,11 @@ public class Juego {
         List<Personaje> mezcla = new ArrayList<>(personajes);
         Collections.shuffle(mezcla);
 
-        mezcla.get(0).setTipo(Personaje.Tipo.VERAZ);
-        mezcla.get(1).setTipo(Personaje.Tipo.VERAZ);
-        mezcla.get(2).setTipo(Personaje.Tipo.MENTIROSO);
-        mezcla.get(3).setTipo(Personaje.Tipo.MENTIROSO);
-        mezcla.get(4).setTipo(Personaje.Tipo.AMBOS);
+        mezcla.get(0).setTipo(TipoDePersonaje.VERAZ);
+        mezcla.get(1).setTipo(TipoDePersonaje.VERAZ);
+        mezcla.get(2).setTipo(TipoDePersonaje.MENTIROSO);
+        mezcla.get(3).setTipo(TipoDePersonaje.MENTIROSO);
+        mezcla.get(4).setTipo(TipoDePersonaje.AMBOS);
 
         // Inicializamos la cadena de Markov para la primera ronda.
         cadenaMarkov.iniciar();
@@ -43,9 +51,9 @@ public class Juego {
         for (Personaje p : personajes) {
             boolean verdad;
 
-            if (p.getTipo() == Personaje.Tipo.VERAZ) {
+            if (p.getTipo() == TipoDePersonaje.VERAZ) {
                 verdad = true;
-            } else if (p.getTipo() == Personaje.Tipo.MENTIROSO) {
+            } else if (p.getTipo() == TipoDePersonaje.MENTIROSO) {
                 verdad = false;
             } else {
                 // El personaje AMBOS utiliza la cadena de Markov.
@@ -151,7 +159,7 @@ public class Juego {
 
     public Personaje getPersonajeAmbos() {
         for (Personaje p : personajes) {
-            if (p.getTipo() == Personaje.Tipo.AMBOS) {
+            if (p.getTipo() == TipoDePersonaje.AMBOS) {
                 return p;
             }
         }

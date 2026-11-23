@@ -1,3 +1,7 @@
+package verdadmentira;
+
+import verdadmentira.view.VentanaJuego;
+
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 

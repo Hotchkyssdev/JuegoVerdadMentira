@@ -2,10 +2,10 @@ JUEGO DE LA VERDAD Y LA MENTIRA - JAVA SWING
 Requisitos: JDK 17 o superior. No requiere librerias externas.
 
 Ejecucion:
-- Abrir la carpeta src en IntelliJ IDEA / Eclipse / VS Code y ejecutar Main.java.
+- Abrir la carpeta src en IntelliJ IDEA / Eclipse / VS Code y ejecutar verdadmentira/Main.java.
 - O desde una terminal dentro de src:
-  javac *.java
-  java Main
+  javac -d out $(find . -name "*.java")
+  java -cp out verdadmentira.Main
 
 Clases:
 Personaje: representa a cada participante y su tipo.

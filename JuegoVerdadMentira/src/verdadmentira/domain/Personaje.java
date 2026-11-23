@@ -1,7 +1,10 @@
+package verdadmentira.domain;
+
+import verdadmentira.enumeration.TipoDePersonaje;
+
 public class Personaje {
-    public enum Tipo { VERAZ, MENTIROSO, AMBOS }
     private final String nombre;
-    private Tipo tipo;
+    private TipoDePersonaje tipo;
     private boolean diceVerdadEstaRonda;
     
     public Personaje(String nombre) { 
@@ -12,11 +15,11 @@ public class Personaje {
         return nombre;
     }
 
-    public Tipo getTipo() { 
+    public TipoDePersonaje getTipo() { 
         return tipo; 
     }
 
-    public void setTipo(Tipo tipo) { 
+    public void setTipo(TipoDePersonaje tipo) { 
         this.tipo = tipo; 
     }
 
@@ -29,8 +32,8 @@ public class Personaje {
     }
 
     public String descripcionReal() {
-        if (tipo == Tipo.VERAZ) return "Veraz";
-        if (tipo == Tipo.MENTIROSO) return "Mentiroso";
+        if (tipo == TipoDePersonaje.VERAZ) return "Veraz";
+        if (tipo == TipoDePersonaje.MENTIROSO) return "Mentiroso";
         return "Ambos";
     }
 }

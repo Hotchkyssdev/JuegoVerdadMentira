@@ -1,3 +1,5 @@
+package verdadmentira.domain;
+
 public class Afirmacion {
     private final Personaje emisor, objetivo;
     private final boolean afirmaQueMiente;

@@ -1,3 +1,7 @@
+package verdadmentira.view.component;
+
+import verdadmentira.domain.ArbolDecisiones;
+
 import javax.swing.*;
 import java.awt.*;
 

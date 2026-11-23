@@ -1,3 +1,10 @@
+package verdadmentira.view;
+
+import verdadmentira.domain.Afirmacion;
+import verdadmentira.service.Juego;
+import verdadmentira.view.component.PanelArbol;
+import verdadmentira.domain.Personaje;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
