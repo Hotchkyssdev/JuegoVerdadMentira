@@ -5,64 +5,59 @@ import java.util.List;
 
 public class ArbolDecisiones {
     public static class Nodo {
-        private final String nombre;
-        private final boolean eligioVeraz;
-        private Nodo izquierdo, derecho;
+        private final String etiqueta;
+        private final Boolean eligioVeraz;
+        private Nodo izquierdo;
+        private Nodo derecho;
 
-        public Nodo(String nombre, boolean eligioVeraz) {
-            this.nombre = nombre; this.eligioVeraz = eligioVeraz;
+        public Nodo(String etiqueta, Boolean eligioVeraz) {
+            this.etiqueta = etiqueta;
+            this.eligioVeraz = eligioVeraz;
         }
 
-        public String getNombre() { 
-            return nombre; 
+        public String getEtiqueta() {
+            return etiqueta;
         }
 
-        public boolean isEligioVeraz() { 
-            return eligioVeraz; 
+        public Boolean getEligioVeraz() {
+            return eligioVeraz;
         }
 
-        public Nodo getIzquierdo() { 
-            return izquierdo; 
+        public Nodo getIzquierdo() {
+            return izquierdo;
         }
 
-        public Nodo getDerecho() { 
-            return derecho; 
+        public Nodo getDerecho() {
+            return derecho;
         }
-    }
 
-    private Nodo raiz;
-    public void insertar(String nombre, boolean veraz) {
-        Nodo nuevo = new Nodo(nombre, veraz);
-        if (raiz == null) { 
-            raiz = nuevo; 
-            return; 
-        }
-        insertarRecursivo(raiz, nuevo);
-    }
-
-    private void insertarRecursivo(Nodo actual, Nodo nuevo) {
-        if (nuevo.eligioVeraz) {
-            if (actual.derecho == null) actual.derecho = nuevo;
-            else insertarRecursivo(actual.derecho, nuevo);
-        } else {
-            if (actual.izquierdo == null) actual.izquierdo = nuevo;
-            else insertarRecursivo(actual.izquierdo, nuevo);
+        public Nodo getHijo() {
+            return izquierdo != null ? izquierdo : derecho;
         }
     }
 
-    public Nodo getRaiz() { 
+    private final Nodo raiz;
+    private Nodo ultimo;
+
+    public ArbolDecisiones(String nombre) {
+        raiz = new Nodo(nombre, null);
+        ultimo = raiz;
+    }
+
+    public void agregarRonda(boolean eligioVeraz) {
+        Nodo nuevo = new Nodo(eligioVeraz ? "Veraz" : "Mentiroso", eligioVeraz);
+        if (eligioVeraz) ultimo.derecho = nuevo;
+        else ultimo.izquierdo = nuevo;
+        ultimo = nuevo;
+    }
+
+    public Nodo getRaiz() {
         return raiz;
     }
 
-    public List<String> obtenerRecorrido() {
-        List<String> lista = new ArrayList<>(); 
-        preOrden(raiz, lista); 
-        return lista;
-    }
-
-    private void preOrden(Nodo n, List<String> lista) {
-        if (n == null) return;
-        lista.add(n.nombre + " -> " + (n.eligioVeraz ? "VERAZ (derecha)" : "MENTIROSO (izquierda)"));
-        preOrden(n.izquierdo, lista); preOrden(n.derecho, lista);
+    public List<Boolean> getCamino() {
+        List<Boolean> camino = new ArrayList<>();
+        for (Nodo n = raiz.getHijo(); n != null; n = n.getHijo()) camino.add(n.eligioVeraz);
+        return camino;
     }
 }

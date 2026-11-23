@@ -1,49 +1,182 @@
 package verdadmentira.view.component;
 
 import verdadmentira.domain.ArbolDecisiones;
+import verdadmentira.domain.Personaje;
+import verdadmentira.service.Juego;
+import verdadmentira.view.style.Estilo;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
+import java.awt.geom.Ellipse2D;
+import java.util.List;
 
 public class PanelArbol extends JPanel {
-    private ArbolDecisiones.Nodo raiz;
+    private static final double[] SEPARACION = {0.19, 0.12, 0.09};
+    private static final float[] PUNTEADO = {4f, 4f};
 
-    public PanelArbol() { 
-        setPreferredSize(new Dimension(650, 300)); 
-        setBackground(Color.WHITE); 
+    private final Personaje personaje;
+    private final ArbolDecisiones arbol;
+    private final boolean compacto;
+    private final int radio;
+    private final int primerNivel;
+    private final int entreNiveles;
+    private Boolean pendiente;
+
+    private PanelArbol(Personaje personaje, ArbolDecisiones arbol, boolean compacto) {
+        this.personaje = personaje;
+        this.arbol = arbol;
+        this.compacto = compacto;
+        radio = compacto ? 8 : 13;
+        primerNivel = compacto ? 9 : 34;
+        entreNiveles = compacto ? 20 : 58;
+        setOpaque(false);
+        setPreferredSize(compacto ? new Dimension(140, 78) : new Dimension(200, 290));
+        setMinimumSize(getPreferredSize());
     }
 
-    public void setRaiz(ArbolDecisiones.Nodo raiz) { 
-        this.raiz = raiz; 
-        repaint(); 
+    public static PanelArbol grande(Personaje personaje, ArbolDecisiones arbol) {
+        return new PanelArbol(personaje, arbol, false);
     }
 
-    @Override protected void paintComponent(Graphics g) {
+    public static PanelArbol compacto(Personaje personaje, ArbolDecisiones arbol) {
+        return new PanelArbol(personaje, arbol, true);
+    }
+
+    public void setPendiente(Boolean pendiente) {
+        this.pendiente = pendiente;
+        repaint();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (raiz == null) return;
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        dibujar(g2, raiz, getWidth()/2, 35, Math.max(85, getWidth()/4));
+        Estilo.suavizar(g2);
+        int w = getWidth();
+        List<Boolean> camino = arbol.getCamino();
+        boolean conPendiente = compacto && camino.size() < Juego.RONDAS;
+        int niveles = camino.size() + (conPendiente ? 1 : 0);
+
+        double x = w / 2.0;
+        int y = primerNivel;
+        for (int nivel = 0; nivel < niveles; nivel++) {
+            double separacion = Math.max(radio * 1.6, w * SEPARACION[Math.min(nivel, SEPARACION.length - 1)]);
+            int yHijo = y + entreNiveles;
+            boolean esPendiente = nivel == camino.size();
+            Boolean eleccion = esPendiente ? pendiente : camino.get(nivel);
+            if (eleccion == null) {
+                dibujarRamaFantasma(g2, x, y, x - separacion, yHijo, false);
+                dibujarRamaFantasma(g2, x, y, x + separacion, yHijo, true);
+                break;
+            }
+            double xElegido = eleccion ? x + separacion : x - separacion;
+            double xOtro = eleccion ? x - separacion : x + separacion;
+            dibujarRamaFantasma(g2, x, y, xOtro, yHijo, !eleccion);
+
+            Color color = Estilo.texto(Estilo.colorDeMarca(eleccion));
+            g2.setColor(color);
+            g2.setStroke(esPendiente ? punteado(2f) : new BasicStroke(compacto ? 2.2f : 3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine((int) x, y + radio, (int) xElegido, yHijo - radio);
+            dibujarNodo(g2, xElegido, yHijo, eleccion, esPendiente ? Estado.PENDIENTE : Estado.ELEGIDO);
+
+            x = xElegido;
+            y = yHijo;
+        }
+
+        dibujarRaiz(g2, w / 2.0, primerNivel);
+        if (!compacto) dibujarResumen(g2, w, camino);
         g2.dispose();
     }
 
-    private void dibujar(Graphics2D g, ArbolDecisiones.Nodo n, int x, int y, int sep) {
-        if (n == null) return;
-        int r = 25;
-        if (n.getIzquierdo() != null) {
-            int nx=x-sep, ny=y+75; g.setColor(new Color(190,55,55));
-            g.drawLine(x,y+r,nx,ny-r); g.drawString("Mentiroso", (x+nx)/2-28,(y+ny)/2);
-            dibujar(g,n.getIzquierdo(),nx,ny,Math.max(35,sep/2));
-        }
+    private enum Estado { ELEGIDO, PENDIENTE, FANTASMA }
 
-        if (n.getDerecho() != null) {
-            int nx=x+sep, ny=y+75; g.setColor(new Color(35,145,75));
-            g.drawLine(x,y+r,nx,ny-r); g.drawString("Veraz",(x+nx)/2-15,(y+ny)/2);
-            dibujar(g,n.getDerecho(),nx,ny,Math.max(35,sep/2));
-        }
+    private void dibujarRamaFantasma(Graphics2D g, double x, int y, double xHijo, int yHijo, boolean veraz) {
+        g.setColor(Estilo.GRIS);
+        g.setStroke(punteado(1.3f));
+        g.drawLine((int) x, y + radio, (int) xHijo, yHijo - radio);
+        dibujarNodo(g, xHijo, yHijo, veraz, Estado.FANTASMA);
+    }
 
-        g.setColor(n.isEligioVeraz()?new Color(35,145,75):new Color(190,55,55));
-        g.fillOval(x-r,y-r,r*2,r*2); g.setColor(Color.WHITE);
-        FontMetrics fm=g.getFontMetrics(); g.drawString(n.getNombre(),x-fm.stringWidth(n.getNombre())/2,y+4);
+    private static Stroke punteado(float grosor) {
+        return new BasicStroke(grosor, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, PUNTEADO, 0f);
+    }
+
+    private void dibujarRaiz(Graphics2D g, double x, int y) {
+        Color color = personaje.getColorRopa();
+        if (compacto) {
+            Ellipse2D circulo = new Ellipse2D.Double(x - radio, y - radio, radio * 2, radio * 2);
+            g.setColor(color);
+            g.fill(circulo);
+            g.setFont(Estilo.MINI_NEGRITA);
+            g.setColor(Estilo.textoSobre(color));
+            FontMetrics fm = g.getFontMetrics();
+            String inicial = personaje.getNombre().substring(0, 1);
+            g.drawString(inicial, (float) (x - fm.stringWidth(inicial) / 2.0), y + fm.getAscent() / 2f - 1);
+            return;
+        }
+        g.setFont(Estilo.NEGRITA);
+        FontMetrics fm = g.getFontMetrics();
+        String nombre = personaje.getNombre();
+        int ancho = fm.stringWidth(nombre) + 22;
+        int alto = 26;
+        g.setColor(color);
+        g.fillRoundRect((int) (x - ancho / 2.0), y - alto / 2, ancho, alto, alto, alto);
+        g.setColor(Estilo.textoSobre(color));
+        g.drawString(nombre, (float) (x - fm.stringWidth(nombre) / 2.0), y + fm.getAscent() / 2f - 2);
+    }
+
+    private void dibujarNodo(Graphics2D g, double x, int y, boolean veraz, Estado estado) {
+        Ellipse2D circulo = new Ellipse2D.Double(x - radio, y - radio, radio * 2, radio * 2);
+        Color color = Estilo.colorDeMarca(veraz);
+        Color relleno;
+        Color borde;
+        Color letra;
+        switch (estado) {
+            case ELEGIDO -> {
+                relleno = color;
+                borde = color;
+                letra = Color.WHITE;
+            }
+            case PENDIENTE -> {
+                relleno = Estilo.mezclar(Estilo.TARJETA, color, 0.25);
+                borde = Estilo.texto(color);
+                letra = Estilo.texto(color);
+            }
+            default -> {
+                relleno = Estilo.TARJETA;
+                borde = Estilo.GRIS;
+                letra = Estilo.GRIS;
+            }
+        }
+        g.setColor(relleno);
+        g.fill(circulo);
+        g.setColor(borde);
+        g.setStroke(estado == Estado.PENDIENTE ? punteado(1.6f) : new BasicStroke(estado == Estado.ELEGIDO ? 2f : 1.3f));
+        g.draw(circulo);
+        g.setFont(compacto ? Estilo.MINI_NEGRITA : Estilo.CHICA_NEGRITA);
+        g.setColor(letra);
+        FontMetrics fm = g.getFontMetrics();
+        String inicial = veraz ? "V" : "M";
+        g.drawString(inicial, (float) (x - fm.stringWidth(inicial) / 2.0), y + fm.getAscent() / 2f - 1);
+    }
+
+    private void dibujarResumen(Graphics2D g, int w, List<Boolean> camino) {
+        g.setFont(Estilo.CHICA);
+        int yTexto = primerNivel + entreNiveles * Juego.RONDAS + radio + 22;
+        int ronda = 1;
+        for (Boolean eleccion : camino) {
+            String linea = "Ronda " + ronda + ": " + (eleccion ? "veraz" : "mentiroso");
+            g.setColor(Estilo.texto(Estilo.colorDeMarca(eleccion)));
+            FontMetrics fm = g.getFontMetrics();
+            g.drawString(linea, (w - fm.stringWidth(linea)) / 2, yTexto);
+            yTexto += 16;
+            ronda++;
+        }
     }
 }
