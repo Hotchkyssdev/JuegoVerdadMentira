@@ -6,6 +6,7 @@ import verdadmentira.view.PantallaRonda;
 import verdadmentira.view.style.Estilo;
 
 import javax.swing.CellRendererPane;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.AlphaComposite;
@@ -44,6 +45,8 @@ public class PanelDigrafo extends JPanel {
 
     private enum Lado { ARRIBA, DERECHA, IZQUIERDA }
 
+
+
     private final PantallaRonda ronda;
     private final CellRendererPane pintor = new CellRendererPane();
     private final JLabel textoDeGlobo = new JLabel();
@@ -52,6 +55,7 @@ public class PanelDigrafo extends JPanel {
     private final Map<Personaje, Lado> lados = new HashMap<>();
     private final Map<Personaje, Integer> anchosDeTexto = new HashMap<>();
     private Personaje bajoElMouse;
+    private JComponent herramientas;
 
     public PanelDigrafo(PantallaRonda ronda) {
         super(null);
@@ -85,6 +89,21 @@ public class PanelDigrafo extends JPanel {
         };
         addMouseListener(raton);
         addMouseMotionListener(raton);
+    }
+
+    public void setHerramientas(JComponent herramientas) {
+        if (this.herramientas != null) remove(this.herramientas);
+        this.herramientas = herramientas;
+        add(herramientas);
+        revalidate();
+    }
+
+    @Override
+    public void doLayout() {
+        if (herramientas != null) {
+            Dimension tamanio = herramientas.getPreferredSize();
+            herramientas.setBounds(0, 0, tamanio.width, tamanio.height);
+        }
     }
 
     @Override
@@ -257,8 +276,9 @@ public class PanelDigrafo extends JPanel {
         forma.add(new Area(cola));
         g.setColor(Estilo.TARJETA);
         g.fill(forma);
-        g.setColor(seleccionado ? p.getColorRopa() : Estilo.BORDE);
-        g.setStroke(new BasicStroke(seleccionado ? 2.6f : 1.4f));
+        boolean conAviso = ronda.getAviso(p) != null;
+        g.setColor(conAviso ? Estilo.texto(Estilo.ROJO) : seleccionado ? p.getColorRopa() : Estilo.BORDE);
+        g.setStroke(new BasicStroke(conAviso || seleccionado ? 2.6f : 1.4f));
         g.draw(forma);
 
         textoDeGlobo.setText(htmlDeGlobo(p, anchosDeTexto.get(p)));

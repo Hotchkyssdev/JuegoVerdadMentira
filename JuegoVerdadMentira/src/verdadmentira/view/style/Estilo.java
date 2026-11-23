@@ -144,6 +144,7 @@ public final class Estilo {
                 + "Al elegir a alguien, la línea gruesa es lo que dice y la punteada, lo que dicen de él.</p><br>"
                 + "<p><b>El árbol de cada personaje</b> está siempre en la franja de abajo: cada nivel es una ronda, "
                 + "a la izquierda mentiroso y a la derecha veraz. El juego no te dice si acertaste.</p><br>"
+                + "<p><b>Pistas.</b> Tenés tres por partida: te marcan las frases que no cierran con lo que marcaste.</p><br>"
                 + "<p><b>Para arrancar.</b> En la primera ronda, uno de los personajes dice algo que podés comprobar "
                 + "mirando las fotos (por ejemplo, quién tiene anteojos o de qué color es una remera). "
                 + "Si es cierto, ese personaje dice la verdad; si es falso, miente.</p><br>"

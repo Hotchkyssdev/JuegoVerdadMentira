@@ -21,6 +21,7 @@ import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -35,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.IntSupplier;
 
 public class PantallaRonda extends JPanel {
     private static final int ANCHO_DETALLE = 350;
@@ -43,21 +45,30 @@ public class PantallaRonda extends JPanel {
     private final Juego juego;
     private final int ronda;
     private final Map<Personaje, Boolean> marcas;
+    private final Map<Personaje, String> avisos = new HashMap<>();
     private final Map<Personaje, Afirmacion> afirmaciones = new LinkedHashMap<>();
     private final Map<Personaje, PanelArbol> arboles = new HashMap<>();
     private final Map<Personaje, JPanel> celdasDeArbol = new HashMap<>();
     private final Map<Personaje, JLabel> nombresDeArbol = new HashMap<>();
+    private final IntSupplier pistasRestantes;
+    private final Runnable gastarPista;
     private final PanelDigrafo digrafo;
     private final JPanel detalle = new PanelQueSigueElAncho();
     private final JLabel contador = new JLabel();
+    private final JLabel mensaje = new JLabel(" ");
     private final Boton confirmar = new Boton("Confirmar ronda", Estilo.PRINCIPAL, true);
+    private final Boton pista;
     private Personaje seleccionado;
 
-    public PantallaRonda(Juego juego, int ronda, Map<Personaje, Boolean> marcas, Runnable alConfirmar) {
+    public PantallaRonda(Juego juego, int ronda, Map<Personaje, Boolean> marcas,
+                         IntSupplier pistasRestantes,
+                         Runnable gastarPista, Runnable alConfirmar) {
         super(new BorderLayout(0, 12));
         this.juego = juego;
         this.ronda = ronda;
         this.marcas = marcas;
+        this.pistasRestantes = pistasRestantes;
+        this.gastarPista = gastarPista;
         setOpaque(false);
         for (Afirmacion a : juego.getAfirmaciones(ronda)) afirmaciones.put(a.getEmisor(), a);
         seleccionado = afirmaciones.values().stream()
@@ -91,15 +102,23 @@ public class PantallaRonda extends JPanel {
 
         contador.setFont(Estilo.TEXTO);
         contador.setForeground(Estilo.TINTA_SUAVE);
+        mensaje.setFont(Estilo.NEGRITA);
         JPanel textosDelPie = new JPanel();
         textosDelPie.setOpaque(false);
         textosDelPie.setLayout(new BoxLayout(textosDelPie, BoxLayout.Y_AXIS));
         textosDelPie.add(contador);
+        textosDelPie.add(mensaje);
         JPanel izquierda = new JPanel(new BorderLayout(16, 0));
         izquierda.setOpaque(false);
         izquierda.add(textosDelPie, BorderLayout.CENTER);
 
+        pista = new Boton(textoDePista(), Estilo.TINTA_SUAVE, false);
+        pista.addActionListener(e -> usarPista());
         confirmar.addActionListener(e -> alConfirmar.run());
+        JPanel herramientas = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        herramientas.setOpaque(false);
+        herramientas.add(pista);
+        digrafo.setHerramientas(herramientas);
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         botones.setOpaque(false);
         botones.add(confirmar);
@@ -137,6 +156,10 @@ public class PantallaRonda extends JPanel {
         return marcas.get(p);
     }
 
+    public String getAviso(Personaje p) {
+        return avisos.get(p);
+    }
+
     public Personaje getSeleccionado() {
         return seleccionado;
     }
@@ -149,7 +172,13 @@ public class PantallaRonda extends JPanel {
     private void marcar(Personaje p, boolean veraz) {
         if (Objects.equals(marcas.get(p), veraz)) marcas.remove(p);
         else marcas.put(p, veraz);
+        limpiarPista();
         refrescar();
+    }
+
+    private void limpiarPista() {
+        avisos.clear();
+        mensaje.setText(" ");
     }
 
     private void moverSeleccion(int paso) {
@@ -164,6 +193,9 @@ public class PantallaRonda extends JPanel {
                 ? "Marcaste a los " + total + ". Revisá que todo cierre y confirmá."
                 : "Marcaste " + marcas.size() + " de " + total + ".");
         confirmar.setEnabled(marcas.size() == total);
+        pista.setText(textoDePista());
+        pista.setEnabled(pistasRestantes.getAsInt() > 0);
+        pista.revalidate();
         for (Personaje p : getPersonajes()) {
             arboles.get(p).setPendiente(getMarca(p));
             boolean elegido = p == seleccionado;
@@ -253,6 +285,13 @@ public class PantallaRonda extends JPanel {
         }
         agregar(texto(dicen.length() == 0 ? "Nadie habla de " + p.getNombre() + " en esta ronda." : dicen.toString(), Estilo.TEXTO), 12);
 
+        String aviso = avisos.get(p);
+        if (aviso != null) {
+            JLabel etiquetaAviso = texto(aviso, Estilo.NEGRITA);
+            etiquetaAviso.setForeground(Estilo.texto(Estilo.ROJO));
+            agregar(etiquetaAviso, 12);
+        }
+
         agregar(titulo("Marcalo"), 4);
         Boton verdad = new Boton("Dice la verdad", Estilo.VERDE, false);
         verdad.setSeleccionado(Boolean.TRUE.equals(marca));
@@ -332,6 +371,50 @@ public class PantallaRonda extends JPanel {
         etiqueta.setFont(fuente);
         etiqueta.setForeground(Estilo.TINTA);
         return etiqueta;
+    }
+
+    private String textoDePista() {
+        return "Pista (" + pistasRestantes.getAsInt() + ")";
+    }
+
+    private void usarPista() {
+        Map<Personaje, Boolean> todas = marcas;
+        if (todas.isEmpty()) {
+            mostrarMensaje("Marcá al menos a alguien antes de pedir una pista.", Estilo.TINTA);
+            return;
+        }
+        avisos.clear();
+        int revisadas = 0;
+        for (Afirmacion a : afirmaciones.values()) {
+            Personaje emisor = a.getEmisor();
+            boolean sePuedeRevisar = todas.containsKey(emisor)
+                    && a.getReferencias().stream().allMatch(r -> todas.containsKey(r.objetivo()));
+            if (!sePuedeRevisar) continue;
+            revisadas++;
+            if (a.esVerdadera(todas) != todas.get(emisor)) {
+                avisos.put(emisor, "No cierra con lo que marcaste: si " + emisor.getNombre()
+                        + (todas.get(emisor) ? " dice la verdad, su frase tendría que ser cierta." : " miente, su frase tendría que ser falsa."));
+            }
+        }
+        if (revisadas == 0) {
+            mostrarMensaje("Todavía no hay frases para revisar: marcá también a quienes nombran. No se gastó la pista.", Estilo.TINTA);
+            return;
+        }
+        gastarPista.run();
+        if (avisos.isEmpty()) {
+            mostrarMensaje("Lo que marcaste hasta ahora no se contradice (" + revisadas + " frases revisadas).", Estilo.texto(Estilo.VERDE));
+        } else {
+            seleccionado = avisos.keySet().stream().findFirst().orElse(seleccionado);
+            mostrarMensaje(avisos.size() == 1
+                    ? "Hay una frase que no cierra con lo que marcaste: su globo está en rojo."
+                    : "Hay " + avisos.size() + " frases que no cierran con lo que marcaste: sus globos están en rojo.", Estilo.texto(Estilo.ROJO));
+        }
+        refrescar();
+    }
+
+    private void mostrarMensaje(String texto, Color color) {
+        mensaje.setText(texto);
+        mensaje.setForeground(color);
     }
 
     private static JPanel tarjeta(JComponent contenido) {

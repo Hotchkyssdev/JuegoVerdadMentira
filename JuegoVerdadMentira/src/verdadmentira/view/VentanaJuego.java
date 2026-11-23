@@ -34,11 +34,13 @@ import java.util.List;
 import java.util.Map;
 
 public class VentanaJuego extends JFrame {
+    private static final int PISTAS_POR_PARTIDA = 3;
 
     private final Map<Personaje, Boolean> marcas = new LinkedHashMap<>();
     private Timer animacion;
     private Juego juego;
     private int ronda;
+    private int pistasRestantes;
     private Runnable pantallaActual;
     private boolean enInicio;
     private boolean partidaEnCurso;
@@ -62,6 +64,7 @@ public class VentanaJuego extends JFrame {
     private void reiniciar() {
         juego = new Juego();
         ronda = 0;
+        pistasRestantes = PISTAS_POR_PARTIDA;
         marcas.clear();
     }
 
@@ -161,6 +164,8 @@ public class VentanaJuego extends JFrame {
         partidaEnCurso = true;
         JPanel pantalla = pantalla("Ronda " + (ronda + 1) + " de " + Juego.RONDAS, null, Estilo.TINTA);
         PantallaRonda contenido = new PantallaRonda(juego, ronda, marcas,
+                () -> pistasRestantes,
+                () -> pistasRestantes--,
                 () -> {
                     juego.registrarDecisiones(ronda, marcas);
                     marcas.clear();
