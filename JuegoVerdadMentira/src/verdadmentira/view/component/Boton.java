@@ -3,7 +3,9 @@ package verdadmentira.view.component;
 import verdadmentira.view.style.Estilo;
 
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JButton;
+import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -16,6 +18,8 @@ public class Boton extends JButton {
     private final Color color;
     private final boolean relleno;
     private boolean seleccionado;
+    private Color colorDeTexto;
+    private Icon iconoAlFinal;
 
     public Boton(String texto, Color color, boolean relleno) {
         super(texto);
@@ -31,6 +35,21 @@ public class Boton extends JButton {
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     }
 
+    public void setColorDeTexto(Color colorDeTexto) {
+        this.colorDeTexto = colorDeTexto;
+        repaint();
+    }
+
+    public void setIconoAlFinal(Icon icono) {
+        this.iconoAlFinal = icono;
+        revalidate();
+        repaint();
+    }
+
+    private int anchoDelIcono() {
+        return iconoAlFinal == null ? 0 : iconoAlFinal.getIconWidth() + 8;
+    }
+
     public void setSeleccionado(boolean seleccionado) {
         this.seleccionado = seleccionado;
         repaint();
@@ -39,7 +58,7 @@ public class Boton extends JButton {
     @Override
     public Dimension getPreferredSize() {
         FontMetrics fm = getFontMetrics(getFont());
-        return new Dimension(fm.stringWidth(getText()) + 36, fm.getHeight() + 18);
+        return new Dimension(fm.stringWidth(getText()) + anchoDelIcono() + 36, fm.getHeight() + 18);
     }
 
     @Override
@@ -61,7 +80,7 @@ public class Boton extends JButton {
         } else {
             Color visible = Estilo.texto(color);
             fondo = getModel().isRollover() ? Estilo.mezclar(Estilo.TARJETA, visible, 0.14) : Estilo.TARJETA;
-            texto = visible;
+            texto = colorDeTexto != null ? colorDeTexto : visible;
             borde = visible;
         }
         if (isEnabled() && getModel().isPressed()) fondo = Estilo.mezclar(fondo, Color.BLACK, 0.15);
@@ -74,9 +93,15 @@ public class Boton extends JButton {
         g2.setFont(getFont());
         g2.setColor(texto);
         FontMetrics fm = g2.getFontMetrics();
-        int x = (getWidth() - fm.stringWidth(getText())) / 2;
+        int x = (getWidth() - fm.stringWidth(getText()) - anchoDelIcono()) / 2;
         int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
         g2.drawString(getText(), x, y);
+        if (iconoAlFinal != null) {
+            if (!isEnabled()) g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f));
+            int xIcono = x + fm.stringWidth(getText()) + 8;
+            int yIcono = (getHeight() - iconoAlFinal.getIconHeight()) / 2;
+            iconoAlFinal.paintIcon(this, g2, xIcono, yIcono);
+        }
         g2.dispose();
     }
 }

@@ -7,6 +7,7 @@ import verdadmentira.service.Juego;
 import verdadmentira.view.component.Avatar;
 import verdadmentira.view.component.Boton;
 import verdadmentira.view.component.Burbuja;
+import verdadmentira.view.component.IconoDePeligro;
 import verdadmentira.view.component.PanelArbol;
 import verdadmentira.view.component.PanelDigrafo;
 import verdadmentira.view.style.Estilo;
@@ -27,10 +28,13 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +49,9 @@ public class PantallaRonda extends JPanel {
     private final Juego juego;
     private final int ronda;
     private final Map<Personaje, Boolean> marcas;
+    private final Deque<Map<Personaje, Boolean>> historial = new ArrayDeque<>();
+    private final Boton deshacer = new Boton("Deshacer", Estilo.TINTA_SUAVE, false);
+    private final Boton borrarMarcas = new Boton("Deshacer todo", IconoDePeligro.AMARILLO, false);
     private final Map<Personaje, String> avisos = new HashMap<>();
     private final Map<Personaje, Afirmacion> afirmaciones = new LinkedHashMap<>();
     private final Map<Personaje, PanelArbol> arboles = new HashMap<>();
@@ -103,6 +110,8 @@ public class PantallaRonda extends JPanel {
         contador.setFont(Estilo.TEXTO);
         contador.setForeground(Estilo.TINTA_SUAVE);
         mensaje.setFont(Estilo.NEGRITA);
+        borrarMarcas.setColorDeTexto(Estilo.TINTA);
+        borrarMarcas.setIconoAlFinal(new IconoDePeligro(18));
         JPanel textosDelPie = new JPanel();
         textosDelPie.setOpaque(false);
         textosDelPie.setLayout(new BoxLayout(textosDelPie, BoxLayout.Y_AXIS));
@@ -110,10 +119,16 @@ public class PantallaRonda extends JPanel {
         textosDelPie.add(mensaje);
         JPanel izquierda = new JPanel(new BorderLayout(16, 0));
         izquierda.setOpaque(false);
+        JPanel contenedorBorrar = new JPanel(new GridBagLayout());
+        contenedorBorrar.setOpaque(false);
+        contenedorBorrar.add(borrarMarcas);
+        izquierda.add(contenedorBorrar, BorderLayout.WEST);
         izquierda.add(textosDelPie, BorderLayout.CENTER);
 
         pista = new Boton(textoDePista(), Estilo.TINTA_SUAVE, false);
         pista.addActionListener(e -> usarPista());
+        deshacer.addActionListener(e -> deshacer());
+        borrarMarcas.addActionListener(e -> borrarMarcas());
         confirmar.addActionListener(e -> alConfirmar.run());
         JPanel herramientas = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         herramientas.setOpaque(false);
@@ -121,6 +136,7 @@ public class PantallaRonda extends JPanel {
         digrafo.setHerramientas(herramientas);
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         botones.setOpaque(false);
+        botones.add(deshacer);
         botones.add(confirmar);
         JPanel pie = new JPanel(new BorderLayout());
         pie.setOpaque(false);
@@ -170,8 +186,25 @@ public class PantallaRonda extends JPanel {
     }
 
     private void marcar(Personaje p, boolean veraz) {
+        historial.push(new HashMap<>(marcas));
         if (Objects.equals(marcas.get(p), veraz)) marcas.remove(p);
         else marcas.put(p, veraz);
+        limpiarPista();
+        refrescar();
+    }
+
+    private void deshacer() {
+        if (historial.isEmpty()) return;
+        marcas.clear();
+        marcas.putAll(historial.pop());
+        limpiarPista();
+        refrescar();
+    }
+
+    private void borrarMarcas() {
+        if (marcas.isEmpty()) return;
+        historial.push(new HashMap<>(marcas));
+        marcas.clear();
         limpiarPista();
         refrescar();
     }
@@ -192,6 +225,8 @@ public class PantallaRonda extends JPanel {
         contador.setText(marcas.size() == total
                 ? "Marcaste a los " + total + ". Revisá que todo cierre y confirmá."
                 : "Marcaste " + marcas.size() + " de " + total + ".");
+        deshacer.setEnabled(!historial.isEmpty());
+        borrarMarcas.setEnabled(!marcas.isEmpty());
         confirmar.setEnabled(marcas.size() == total);
         pista.setText(textoDePista());
         pista.setEnabled(pistasRestantes.getAsInt() > 0);
