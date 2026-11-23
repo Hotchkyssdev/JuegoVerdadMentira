@@ -1,3 +1,5 @@
+package src;
+
 import java.util.Random;
 
 public class CadenaMarkov {
@@ -12,8 +14,8 @@ public class CadenaMarkov {
     // Columna 0: próximo estado VERAZ
     // Columna 1: próximo estado MENTIROSO
     private final double[][] matrizTransicion = {
-        {0.70, 0.30},
-        {0.40, 0.60}
+            { 0.70, 0.30 },
+            { 0.40, 0.60 }
     };
 
     // Inicializa la cadena con un estado aleatorio.

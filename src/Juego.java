@@ -1,3 +1,5 @@
+package src;
+
 import java.util.*;
 
 public class Juego {
@@ -88,8 +90,7 @@ public class Juego {
             Afirmacion a = new Afirmacion(
                     emisor,
                     objetivo,
-                    afirmaQueMiente
-            );
+                    afirmaQueMiente);
 
             lista.add(a);
 
@@ -98,8 +99,7 @@ public class Juego {
                     objetivo,
                     afirmaQueMiente
                             ? "afirma que miente"
-                            : "afirma que dice la verdad"
-            );
+                            : "afirma que dice la verdad");
         }
 
         afirmaciones.add(lista);
@@ -142,8 +142,7 @@ public class Juego {
         for (Personaje p : personajes) {
             arbol.insertar(
                     p.getNombre(),
-                    decisiones.get(r).get(p.getNombre())
-            );
+                    decisiones.get(r).get(p.getNombre()));
         }
 
         arboles.set(r, arbol);

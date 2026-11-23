@@ -1,3 +1,5 @@
+package src;
+
 public class Afirmacion {
     private final Personaje emisor, objetivo;
     private final boolean afirmaQueMiente;
@@ -8,12 +10,12 @@ public class Afirmacion {
         this.afirmaQueMiente = afirmaQueMiente;
     }
 
-    public Personaje getEmisor() { 
-        return emisor; 
+    public Personaje getEmisor() {
+        return emisor;
     }
 
-    public Personaje getObjetivo() { 
-        return objetivo; 
+    public Personaje getObjetivo() {
+        return objetivo;
     }
 
     public String getTexto() {
