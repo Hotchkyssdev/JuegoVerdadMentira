@@ -32,7 +32,7 @@ public class Burbuja extends JPanel {
         setOpaque(false);
         setBorder(new EmptyBorder(8, 14, 9 + COLA, 14));
 
-        JLabel nombre = new JLabel(personaje.getNombre() + " dice:");
+        JLabel nombre = new JLabel("<html>" + Estilo.nombreHtml(personaje) + " dice:</html>");
         nombre.setFont(Estilo.CHICA_NEGRITA);
         nombre.setForeground(Estilo.TINTA_SUAVE);
         JLabel frase = new JLabel(envolver(afirmacion.getTexto(Estilo::nombreHtml)));
@@ -112,7 +112,7 @@ public class Burbuja extends JPanel {
         g2.setColor(Estilo.TARJETA);
         g2.fill(forma);
         if (tieneAviso()) g2.setColor(Estilo.texto(Estilo.ROJO));
-        else g2.setColor(resaltada ? personaje.getColorRopa() : Estilo.BORDE);
+        else g2.setColor(resaltada ? personaje.getColor() : Estilo.BORDE);
         g2.setStroke(new BasicStroke(resaltada || tieneAviso() ? 3f : 1.5f));
         g2.draw(forma);
         g2.dispose();

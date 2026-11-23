@@ -209,7 +209,7 @@ public class PanelDigrafo extends JPanel {
             Rectangle foto = fotos.get(p);
             if (p == seleccionado || p == bajoElMouse) {
                 double radio = Math.max(foto.width, foto.height) * RADIO_DEL_HALO;
-                Color c = p.getColorRopa();
+                Color c = p.getColor();
                 g2.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), p == seleccionado ? 90 : 45));
                 g2.fill(new Ellipse2D.Double(foto.getCenterX() - radio, foto.getCenterY() - radio, radio * 2, radio * 2));
             }
@@ -227,7 +227,7 @@ public class PanelDigrafo extends JPanel {
     }
 
     private void dibujarNombre(Graphics2D g, Personaje p, Rectangle foto, boolean seleccionado) {
-        g.setFont(seleccionado ? Estilo.TITULO.deriveFont(21f) : Estilo.NEGRITA.deriveFont(17f));
+        g.setFont(Estilo.NOMBRE.deriveFont(seleccionado ? 21f : 17f));
         FontMetrics fm = g.getFontMetrics();
         String nombre = p.getNombre();
         int anchoTexto = fm.stringWidth(nombre);
@@ -238,9 +238,9 @@ public class PanelDigrafo extends JPanel {
             int alto = fm.getHeight() + 4;
             int x = (int) (cx - ancho / 2.0);
             int y = base - fm.getAscent() - 2;
-            g.setColor(p.getColorRopa());
+            g.setColor(p.getColor());
             g.fillRoundRect(x, y, ancho, alto, alto, alto);
-            g.setColor(Estilo.textoSobre(p.getColorRopa()));
+            g.setColor(Estilo.textoSobre(p.getColor()));
         } else {
             g.setColor(Estilo.TINTA);
         }
@@ -277,7 +277,7 @@ public class PanelDigrafo extends JPanel {
         g.setColor(Estilo.TARJETA);
         g.fill(forma);
         boolean conAviso = ronda.getAviso(p) != null;
-        g.setColor(conAviso ? Estilo.texto(Estilo.ROJO) : seleccionado ? p.getColorRopa() : Estilo.BORDE);
+        g.setColor(conAviso ? Estilo.texto(Estilo.ROJO) : seleccionado ? p.getColor() : Estilo.BORDE);
         g.setStroke(new BasicStroke(conAviso || seleccionado ? 2.6f : 1.4f));
         g.draw(forma);
 

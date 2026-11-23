@@ -235,10 +235,10 @@ public class PantallaRonda extends JPanel {
             arboles.get(p).setPendiente(getMarca(p));
             boolean elegido = p == seleccionado;
             JLabel nombreDeArbol = nombresDeArbol.get(p);
-            nombreDeArbol.setFont(elegido ? Estilo.TITULO.deriveFont(18f) : Estilo.NEGRITA);
+            nombreDeArbol.setFont(Estilo.NOMBRE.deriveFont(elegido ? 18f : 15f));
             nombreDeArbol.setForeground(elegido ? Estilo.TINTA : Estilo.TINTA_SUAVE);
             celdasDeArbol.get(p).setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(elegido ? p.getColorRopa() : Estilo.BORDE, elegido ? 3 : 1),
+                    BorderFactory.createLineBorder(elegido ? p.getColor() : Estilo.BORDE, elegido ? 3 : 1),
                     new EmptyBorder(elegido ? 4 : 6, 6, elegido ? 4 : 6, 6)));
         }
         armarDetalle();
@@ -249,7 +249,7 @@ public class PantallaRonda extends JPanel {
         PanelArbol arbol = PanelArbol.compacto(p, juego.getArbol(p));
         arboles.put(p, arbol);
         JLabel nombre = new JLabel(p.getNombre(), JLabel.CENTER);
-        nombre.setFont(Estilo.CHICA_NEGRITA);
+        nombre.setFont(Estilo.NOMBRE.deriveFont(13f));
         nombre.setForeground(Estilo.TINTA_SUAVE);
         nombresDeArbol.put(p, nombre);
         JPanel celda = new JPanel(new BorderLayout(0, 2));
@@ -275,7 +275,7 @@ public class PantallaRonda extends JPanel {
         Avatar avatar = new Avatar(p, 58, false);
         avatar.setMarca(getMarca(p));
         JLabel nombre = new JLabel(p.getNombre());
-        nombre.setFont(Estilo.TITULO.deriveFont(30f));
+        nombre.setFont(Estilo.NOMBRE.deriveFont(26f));
         nombre.setForeground(Estilo.colorDeNombre(p));
         Boolean marca = getMarca(p);
         String queDice = Boolean.TRUE.equals(marca) ? "dice la verdad" : "miente";
@@ -299,7 +299,7 @@ public class PantallaRonda extends JPanel {
         cabecera.setOpaque(false);
         cabecera.add(contenedorAvatar, BorderLayout.WEST);
         cabecera.add(textosCabecera, BorderLayout.CENTER);
-        limitarAlto(cabecera, Avatar.alto(58, false));
+        limitarAlto(cabecera, Math.max(Avatar.alto(58, false), textosCabecera.getPreferredSize().height));
         agregar(cabecera, 12);
 
         agregar(titulo("Dice"), 2);

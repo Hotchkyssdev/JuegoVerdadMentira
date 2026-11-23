@@ -4,7 +4,7 @@ import verdadmentira.domain.Afirmacion;
 import verdadmentira.domain.ArbolDecisiones;
 import verdadmentira.domain.GrafoPersonajes;
 import verdadmentira.domain.Personaje;
-import verdadmentira.enumeration.Accesorio;
+import verdadmentira.enumeration.RasgoVisible;
 import verdadmentira.enumeration.TipoDePersonaje;
 
 import java.awt.Color;
@@ -26,11 +26,11 @@ public class Juego {
     private enum Forma { SIMPLE, COMPUESTA, SOBRE_SI_MISMO, HECHO_VISIBLE }
 
     private final List<Personaje> personajes = List.of(
-            new Personaje("Juan", new Color(0xF08A3E), "naranja", new Color(0x33363B), false, Accesorio.ANTEOJOS),
-            new Personaje("Rita", new Color(0x7FA3CC), "celeste", new Color(0x8A4B2C), true, Accesorio.MONIO),
-            new Personaje("Gustavo", new Color(0xA5ADB8), "gris", new Color(0x2A2A2A), false, Accesorio.GORRA),
-            new Personaje("Sofía", new Color(0xE3B456), "amarilla", new Color(0xC79A55), true, Accesorio.VINCHA),
-            new Personaje("Francisco", new Color(0xA28BC9), "violeta", new Color(0x6A4A30), false, Accesorio.BARBA)
+            new Personaje("McLovin", new Color(0xF08A3E), "naranja", RasgoVisible.FLEQUILLO),
+            new Personaje("Roz", new Color(0x7FA3CC), "celeste", RasgoVisible.PELO_GRIS),
+            new Personaje("Albert", new Color(0xA5ADB8), "gris", RasgoVisible.BARBA),
+            new Personaje("Lisa", new Color(0xE3B456), "amarillo", RasgoVisible.COLLAR_DE_PERLAS),
+            new Personaje("Ferb", new Color(0xA28BC9), "violeta", RasgoVisible.PELO_VERDE)
     );
     private final List<Map<Personaje, Boolean>> realidad = new ArrayList<>();
     private final List<List<Afirmacion>> afirmaciones = new ArrayList<>();
@@ -136,15 +136,15 @@ public class Juego {
     }
 
     private Afirmacion hechoVisibleAlAzar(Personaje emisor, Personaje objetivo, boolean emisorDiceVerdad) {
-        boolean hablaDelAccesorio = random.nextBoolean();
+        boolean hablaDelRasgo = random.nextBoolean();
         String descripcion;
         if (emisorDiceVerdad) {
-            descripcion = hablaDelAccesorio ? objetivo.descripcionDelAccesorio() : objetivo.descripcionDeLaRemera();
+            descripcion = hablaDelRasgo ? objetivo.descripcionDelRasgo() : objetivo.descripcionDelFondo();
         } else {
             List<Personaje> otros = new ArrayList<>(personajes);
             otros.remove(objetivo);
             Personaje otro = otros.get(random.nextInt(otros.size()));
-            descripcion = hablaDelAccesorio ? otro.descripcionDelAccesorio() : otro.descripcionDeLaRemera();
+            descripcion = hablaDelRasgo ? otro.descripcionDelRasgo() : otro.descripcionDelFondo();
         }
         return new Afirmacion(emisor, new Afirmacion.HechoVisible(objetivo, descripcion, emisorDiceVerdad));
     }

@@ -6,12 +6,14 @@ import javax.swing.JLabel;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.RenderingHints;
+import java.util.Arrays;
+import java.util.List;
 
 public final class Estilo {
     public static final Color ROJO = new Color(0xC2453F);
     public static final Color VERDE = new Color(0x2C9A5A);
-    public static final Color PIEL = new Color(0xF6D7BE);
 
     public static Color FONDO;
     public static Color TARJETA;
@@ -19,13 +21,13 @@ public final class Estilo {
     public static Color TINTA;
     public static Color TINTA_SUAVE;
     public static Color GRIS;
-    public static Color MARCO;
-    public static Color CIELO;
     public static Color PRINCIPAL;
     public static Color ENCABEZADO;
     public static Color ROJO_CLARO;
     public static Color VERDE_CLARO;
     public static Color AMARILLO_CLARO;
+
+    private static final String LETRA_DE_NOMBRES = letraAMano();
 
     public static final Font TITULO = new Font("SansSerif", Font.BOLD, 28);
     public static final Font TEXTO = new Font("SansSerif", Font.PLAIN, 15);
@@ -34,6 +36,7 @@ public final class Estilo {
     public static final Font CHICA = new Font("SansSerif", Font.PLAIN, 12);
     public static final Font CHICA_NEGRITA = new Font("SansSerif", Font.BOLD, 12);
     public static final Font MINI_NEGRITA = new Font("SansSerif", Font.BOLD, 10);
+    public static final Font NOMBRE = new Font(LETRA_DE_NOMBRES, Font.BOLD, 15);
 
     private static boolean oscuro;
 
@@ -53,8 +56,6 @@ public final class Estilo {
             TINTA = new Color(0xE8EAED);
             TINTA_SUAVE = new Color(0x9AA4B2);
             GRIS = new Color(0x56606E);
-            MARCO = new Color(0x2A313B);
-            CIELO = new Color(0x4F7F8C);
             PRINCIPAL = new Color(0xD9DEE5);
             ENCABEZADO = new Color(0x2A313B);
             ROJO_CLARO = new Color(0x3B2326);
@@ -67,14 +68,20 @@ public final class Estilo {
             TINTA = new Color(0x1F2A37);
             TINTA_SUAVE = new Color(0x5B6573);
             GRIS = new Color(0xB8BDC4);
-            MARCO = Color.WHITE;
-            CIELO = new Color(0xA9D6E0);
             PRINCIPAL = new Color(0x1F2A37);
             ENCABEZADO = new Color(0x1F2A37);
             ROJO_CLARO = new Color(0xF6DEDC);
             VERDE_CLARO = new Color(0xDCF0E3);
             AMARILLO_CLARO = new Color(0xFFF4D6);
         }
+    }
+
+    private static String letraAMano() {
+        List<String> disponibles = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
+        for (String familia : List.of("Segoe Print", "Ink Free", "Comic Sans MS")) {
+            if (disponibles.contains(familia)) return familia;
+        }
+        return Font.SANS_SERIF;
     }
 
     public static boolean esOscuro() {
@@ -86,7 +93,7 @@ public final class Estilo {
     }
 
     public static Color colorDeNombre(Personaje p) {
-        return oscuro ? mezclar(p.getColorRopa(), Color.WHITE, 0.12) : mezclar(p.getColorRopa(), Color.BLACK, 0.42);
+        return oscuro ? mezclar(p.getColor(), Color.WHITE, 0.12) : mezclar(p.getColor(), Color.BLACK, 0.42);
     }
 
     public static Color textoSobre(Color fondo) {
@@ -104,7 +111,7 @@ public final class Estilo {
     }
 
     public static String nombreHtml(Personaje p) {
-        return "<b>" + p.getNombre() + "</b>";
+        return "<b><font face='" + LETRA_DE_NOMBRES + "'>" + p.getNombre() + "</font></b>";
     }
 
     public static JLabel resumen() {
@@ -148,7 +155,7 @@ public final class Estilo {
                 + "Si llegás a una contradicción, usá <b>Deshacer</b> o <b>Deshacer todo</b> para volver atrás.</p><br>"
                 + "<p><b>Pistas.</b> Tenés tres por partida: te marcan las frases que no cierran con lo que marcaste.</p><br>"
                 + "<p><b>Para arrancar.</b> En la primera ronda, uno de los personajes dice algo que podés comprobar "
-                + "mirando las fotos (por ejemplo, quién tiene anteojos o de qué color es una remera). "
+                + "mirando las fotos (por ejemplo, quién tiene barba o de qué color es el fondo de una foto). "
                 + "Si es cierto, ese personaje dice la verdad; si es falso, miente.</p><br>"
                 + "<p><b>Al final</b> elegís quién es el que puede hacer las dos cosas: "
                 + "es el único que cambia de una ronda a otra. Si lo encontrás, ganás.</p><br>"

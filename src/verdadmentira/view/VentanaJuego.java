@@ -38,7 +38,7 @@ import java.util.Map;
 public class VentanaJuego extends JFrame {
     private static final int PISTAS_POR_PARTIDA = 3;
 
-    private record PasoDePractica(String texto, Boolean juan, Boolean rita, Boolean sofia, boolean contradiccion) { }
+    private record PasoDePractica(String texto, Boolean mcLovin, Boolean roz, Boolean lisa, boolean contradiccion) { }
 
     private final Map<Personaje, Boolean> marcas = new LinkedHashMap<>();
     private Timer animacion;
@@ -169,28 +169,28 @@ public class VentanaJuego extends JFrame {
         pantallaActual = () -> mostrarPractica(paso);
         enInicio = false;
         List<Personaje> personajes = juego.getPersonajes();
-        Personaje juan = personajes.get(0);
-        Personaje rita = personajes.get(1);
-        Personaje sofia = personajes.get(3);
-        String j = Estilo.nombreHtml(juan);
-        String r = Estilo.nombreHtml(rita);
-        String s = Estilo.nombreHtml(sofia);
+        Personaje mcLovin = personajes.get(0);
+        Personaje roz = personajes.get(1);
+        Personaje lisa = personajes.get(3);
+        String m = Estilo.nombreHtml(mcLovin);
+        String r = Estilo.nombreHtml(roz);
+        String l = Estilo.nombreHtml(lisa);
         PasoDePractica[] pasos = {
                 new PasoDePractica("Acá hay tres personajes y cada uno dice una frase. Hay una sola forma de marcarlos "
                         + "en la que todas las frases cierran. Vamos a encontrarla paso a paso.", null, null, null, false),
-                new PasoDePractica("Probemos una suposición: <b>" + j + " miente</b>.", false, null, null, false),
-                new PasoDePractica("Si " + j + " miente, su frase es falsa. Dijo «" + r + " dice la verdad», "
+                new PasoDePractica("Probemos una suposición: <b>" + m + " miente</b>.", false, null, null, false),
+                new PasoDePractica("Si " + m + " miente, su frase es falsa. Dijo «" + r + " dice la verdad», "
                         + "así que <b>" + r + " miente</b>.", false, false, null, false),
-                new PasoDePractica(r + " miente, así que su frase también es falsa. Dijo «" + s + " miente», "
-                        + "entonces <b>" + s + " dice la verdad</b>.", false, false, true, false),
-                new PasoDePractica(s + " dice la verdad, así que su frase es cierta: «" + j + " dice la verdad, pero " + r + " no». "
-                        + "¡Pero habíamos supuesto que " + j + " miente! Es una <b>contradicción</b>: la suposición estaba mal.",
+                new PasoDePractica(r + " miente, así que su frase también es falsa. Dijo «" + l + " miente», "
+                        + "entonces <b>" + l + " dice la verdad</b>.", false, false, true, false),
+                new PasoDePractica(l + " dice la verdad, así que su frase es cierta: «" + m + " dice la verdad, pero " + r + " no». "
+                        + "¡Pero habíamos supuesto que " + m + " miente! Es una <b>contradicción</b>: la suposición estaba mal.",
                         false, false, true, true),
-                new PasoDePractica("Entonces <b>" + j + " dice la verdad</b>. Su frase es cierta, así que "
+                new PasoDePractica("Entonces <b>" + m + " dice la verdad</b>. Su frase es cierta, así que "
                         + "<b>" + r + " dice la verdad</b>.", true, true, null, false),
-                new PasoDePractica(r + " dice la verdad, así que «" + s + " miente» es cierto: <b>" + s + " miente</b>.",
+                new PasoDePractica(r + " dice la verdad, así que «" + l + " miente» es cierto: <b>" + l + " miente</b>.",
                         true, true, false, false),
-                new PasoDePractica("Comprobemos: " + s + " miente, así que su frase tiene que ser falsa. «" + j + " dice la verdad, pero "
+                new PasoDePractica("Comprobemos: " + l + " miente, así que su frase tiene que ser falsa. «" + m + " dice la verdad, pero "
                         + r + " no» es falsa, porque " + r + " dice la verdad. <b>Todo cierra.</b><br><br>"
                         + "En el juego son cinco personajes y tres rondas, y uno de ellos cambia de una ronda a otra: "
                         + "encontrarlo es el objetivo.", true, true, false, false)
@@ -200,18 +200,18 @@ public class VentanaJuego extends JFrame {
         JPanel pantalla = pantalla("Práctica", "Paso " + (paso + 1) + " de " + pasos.length
                 + ". Así se razona una ronda: se supone algo y se sigue hasta que todo cierre o aparezca una contradicción.", Estilo.TINTA);
 
-        Afirmacion fraseDeJuan = new Afirmacion(juan, List.of(new Afirmacion.Referencia(rita, true)));
-        Afirmacion fraseDeRita = new Afirmacion(rita, List.of(new Afirmacion.Referencia(sofia, false)));
-        Afirmacion fraseDeSofia = new Afirmacion(sofia, List.of(
-                new Afirmacion.Referencia(juan, true), new Afirmacion.Referencia(rita, false)));
+        Afirmacion fraseDeMcLovin = new Afirmacion(mcLovin, List.of(new Afirmacion.Referencia(roz, true)));
+        Afirmacion fraseDeRoz = new Afirmacion(roz, List.of(new Afirmacion.Referencia(lisa, false)));
+        Afirmacion fraseDeLisa = new Afirmacion(lisa, List.of(
+                new Afirmacion.Referencia(mcLovin, true), new Afirmacion.Referencia(roz, false)));
 
         JPanel columnas = new JPanel(new GridLayout(1, 3, 24, 0));
         columnas.setOpaque(false);
-        Afirmacion[] frases = {fraseDeJuan, fraseDeRita, fraseDeSofia};
-        Boolean[] marcasDelPaso = {actual.juan(), actual.rita(), actual.sofia()};
+        Afirmacion[] frases = {fraseDeMcLovin, fraseDeRoz, fraseDeLisa};
+        Boolean[] marcasDelPaso = {actual.mcLovin(), actual.roz(), actual.lisa()};
         for (int i = 0; i < frases.length; i++) {
             Burbuja burbuja = new Burbuja(frases[i]);
-            if (actual.contradiccion() && frases[i] == fraseDeSofia) burbuja.setAviso("Esto contradice lo que supusimos.");
+            if (actual.contradiccion() && frases[i] == fraseDeLisa) burbuja.setAviso("Esto contradice lo que supusimos.");
             Avatar avatar = new Avatar(frases[i].getEmisor(), 110, true);
             avatar.setMarca(marcasDelPaso[i]);
             JPanel contenedorAvatar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -349,7 +349,7 @@ public class VentanaJuego extends JFrame {
             nombre.setBackground(Estilo.TARJETA);
             nombre.add(new Avatar(p, 40, false));
             JLabel texto = new JLabel(p.getNombre());
-            texto.setFont(Estilo.NEGRITA);
+            texto.setFont(Estilo.NOMBRE);
             texto.setForeground(Estilo.TINTA);
             nombre.add(texto);
             tabla.add(nombre);

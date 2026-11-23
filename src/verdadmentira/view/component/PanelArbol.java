@@ -108,7 +108,7 @@ public class PanelArbol extends JPanel {
     }
 
     private void dibujarRaiz(Graphics2D g, double x, int y) {
-        Color color = personaje.getColorRopa();
+        Color color = personaje.getColor();
         if (compacto) {
             Ellipse2D circulo = new Ellipse2D.Double(x - radio, y - radio, radio * 2, radio * 2);
             g.setColor(color);
@@ -120,7 +120,7 @@ public class PanelArbol extends JPanel {
             g.drawString(inicial, (float) (x - fm.stringWidth(inicial) / 2.0), y + fm.getAscent() / 2f - 1);
             return;
         }
-        g.setFont(Estilo.NEGRITA);
+        g.setFont(Estilo.NOMBRE);
         FontMetrics fm = g.getFontMetrics();
         String nombre = personaje.getNombre();
         int ancho = fm.stringWidth(nombre) + 22;

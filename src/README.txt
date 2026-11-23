@@ -4,7 +4,8 @@ Requisitos: JDK 17 o superior. No requiere librerias externas.
 Ejecucion:
 - Abrir la carpeta src en IntelliJ IDEA / Eclipse / VS Code y ejecutar verdadmentira/Main.java.
 - O desde una terminal dentro de src:
-  javac -d out $(find . -name "*.java")
+  javac -encoding UTF-8 -d out $(find . -name "*.java")
+  cp -r verdadmentira/view/fotos out/verdadmentira/view/
   java -cp out verdadmentira.Main
 
 Clases:
@@ -25,6 +26,10 @@ Reglas:
 - Los veraces realizan afirmaciones verdaderas y los mentirosos afirmaciones falsas.
 - No se muestra si las respuestas del jugador son correctas hasta el resultado final.
 
-Nota:
-La primera version usa avatares con iniciales en lugar de fotografias, para que
-el juego funcione sin recursos externos. Se pueden agregar imagenes despues.
+Fotos:
+Cada personaje tiene su foto en verdadmentira/view/fotos/<nombre sin tildes>.png
+(360x360, con el fondo del color del personaje). Avatar las carga desde el
+classpath; si falta alguna, muestra el recuadro con el color liso.
+Las frases que se comprueban mirando las fotos hablan del color del fondo o de
+un rasgo visible (RasgoVisible), así que si se cambia una foto hay que revisar
+que el rasgo siga a la vista.
