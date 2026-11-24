@@ -21,7 +21,8 @@ public class Juego {
     private static final int INTENTOS_POR_RONDA = 50000;
     private static final int[] MAXIMO_DE_COMPUESTAS = {0, 2, 5};
     private static final double[] PROBABILIDAD_DE_COMPUESTA = {0.25, 0.4, 0.5};
-    private static final int PRIMERA_RONDA_CON_FRASES_SOBRE_SI_MISMO = 2;
+    private static final int PRIMERA_RONDA_CON_FRASES_SOBRE_SI_MISMO = 1;
+    private static final double PROBABILIDAD_DE_HABLAR_DE_SI_MISMO = 0.25;
 
     private enum Forma { SIMPLE, COMPUESTA, SOBRE_SI_MISMO, HECHO_VISIBLE }
 
@@ -94,7 +95,7 @@ public class Juego {
                 Forma forma = Forma.SIMPLE;
                 double sorteo = random.nextDouble();
                 if (emisor == conHechoVisible) forma = Forma.HECHO_VISIBLE;
-                else if (puedeHablarDeSiMismo && sorteo < 0.1) forma = Forma.SOBRE_SI_MISMO;
+                else if (puedeHablarDeSiMismo && sorteo < PROBABILIDAD_DE_HABLAR_DE_SI_MISMO) forma = Forma.SOBRE_SI_MISMO;
                 else if (compuestas < maximoDeCompuestas && random.nextDouble() < probabilidadDeCompuesta) forma = Forma.COMPUESTA;
                 Afirmacion a = afirmacionAlAzar(emisor, dicenVerdad, forma);
                 if (a.hablaDeSiMismo()) puedeHablarDeSiMismo = false;
@@ -170,6 +171,7 @@ public class Juego {
     private static GrafoPersonajes armarGrafo(List<Afirmacion> lista) {
         GrafoPersonajes grafo = new GrafoPersonajes();
         for (Afirmacion a : lista) {
+            if (a.esHechoVisible()) grafo.agregarDescripcion(a.getEmisor(), a.getHecho().objetivo());
             for (Afirmacion.Referencia r : a.getReferencias()) {
                 grafo.agregarRelacion(a.getEmisor(), r.objetivo(), r.diceVerdad());
             }

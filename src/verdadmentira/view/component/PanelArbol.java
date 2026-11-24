@@ -12,6 +12,7 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Stroke;
 import java.awt.geom.Ellipse2D;
 import java.util.List;
@@ -19,6 +20,9 @@ import java.util.List;
 public class PanelArbol extends JPanel {
     private static final double[] SEPARACION = {0.19, 0.12, 0.09};
     private static final float[] PUNTEADO = {4f, 4f};
+    private static final int ANCHO_DE_FOTO_COMPACTA = 24;
+    private static final int ANCHO_DE_FOTO_GRANDE = 70;
+    private static final int MARGEN_DE_FOTO_GRANDE = 8;
 
     private final Personaje personaje;
     private final ArbolDecisiones arbol;
@@ -27,16 +31,17 @@ public class PanelArbol extends JPanel {
     private final int primerNivel;
     private final int entreNiveles;
     private Boolean pendiente;
+    private boolean fotoVisible;
 
     private PanelArbol(Personaje personaje, ArbolDecisiones arbol, boolean compacto) {
         this.personaje = personaje;
         this.arbol = arbol;
         this.compacto = compacto;
         radio = compacto ? 8 : 13;
-        primerNivel = compacto ? 9 : 34;
-        entreNiveles = compacto ? 20 : 58;
+        primerNivel = compacto ? 16 : MARGEN_DE_FOTO_GRANDE + Avatar.alto(ANCHO_DE_FOTO_GRANDE, true) - radio;
+        entreNiveles = compacto ? 24 : 58;
         setOpaque(false);
-        setPreferredSize(compacto ? new Dimension(140, 78) : new Dimension(200, 290));
+        setPreferredSize(compacto ? new Dimension(140, 100) : new Dimension(200, 340));
         setMinimumSize(getPreferredSize());
     }
 
@@ -46,6 +51,15 @@ public class PanelArbol extends JPanel {
 
     public static PanelArbol compacto(Personaje personaje, ArbolDecisiones arbol) {
         return new PanelArbol(personaje, arbol, true);
+    }
+
+    public Point getCentroDeRaiz() {
+        return new Point(getWidth() / 2, primerNivel);
+    }
+
+    public void setFotoVisible(boolean visible) {
+        fotoVisible = visible;
+        repaint();
     }
 
     public void setPendiente(Boolean pendiente) {
@@ -89,7 +103,7 @@ public class PanelArbol extends JPanel {
             y = yHijo;
         }
 
-        dibujarRaiz(g2, w / 2.0, primerNivel);
+        dibujarRaiz(g2, w / 2.0, primerNivel, fotoVisible || !camino.isEmpty());
         if (!compacto) dibujarResumen(g2, w, camino);
         g2.dispose();
     }
@@ -107,8 +121,22 @@ public class PanelArbol extends JPanel {
         return new BasicStroke(grosor, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, PUNTEADO, 0f);
     }
 
-    private void dibujarRaiz(Graphics2D g, double x, int y) {
+    private void dibujarRaiz(Graphics2D g, double x, int y, boolean conFoto) {
         Color color = personaje.getColor();
+        if (!compacto) {
+            Graphics2D gf = (Graphics2D) g.create();
+            gf.translate(x - ANCHO_DE_FOTO_GRANDE / 2.0, MARGEN_DE_FOTO_GRANDE);
+            Avatar.pintar(gf, personaje, ANCHO_DE_FOTO_GRANDE, true, null);
+            gf.dispose();
+            return;
+        }
+        if (conFoto) {
+            Graphics2D gf = (Graphics2D) g.create();
+            gf.translate(x - ANCHO_DE_FOTO_COMPACTA / 2.0, y - Avatar.alto(ANCHO_DE_FOTO_COMPACTA, false) / 2.0);
+            Avatar.pintar(gf, personaje, ANCHO_DE_FOTO_COMPACTA, false, null);
+            gf.dispose();
+            return;
+        }
         if (compacto) {
             Ellipse2D circulo = new Ellipse2D.Double(x - radio, y - radio, radio * 2, radio * 2);
             g.setColor(color);

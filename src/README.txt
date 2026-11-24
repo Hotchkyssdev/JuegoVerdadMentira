@@ -33,3 +33,15 @@ classpath; si falta alguna, muestra el recuadro con el color liso.
 Las frases que se comprueban mirando las fotos hablan del color del fondo o de
 un rasgo visible (RasgoVisible), así que si se cambia una foto hay que revisar
 que el rasgo siga a la vista.
+
+Animaciones:
+view/animacion tiene el motor (Animacion: un Timer de ~60 cuadros por segundo
+con curvas de aceleración) y CapaDeTransicion, el glass pane donde se dibuja
+lo que viaja entre pantallas y que bloquea los clics mientras dura.
+- Al empezar una ronda, PanelDigrafo hace aparecer las fotos y después recorre
+  la cadena de quién habla de quién: el globo de cada personaje y su flecha,
+  que crece hasta el nombrado. Un clic la completa.
+- Al confirmar, PantallaRonda difumina flechas, globos y el panel de detalle,
+  y cada foto vuela a la raíz de su árbol. VentanaJuego registra la ronda y
+  hace subir los árboles al centro de la pantalla de resumen.
+

@@ -3,6 +3,7 @@ package verdadmentira.view.component;
 import verdadmentira.domain.GrafoPersonajes;
 import verdadmentira.domain.Personaje;
 import verdadmentira.view.PantallaRonda;
+import verdadmentira.view.animacion.Animacion;
 import verdadmentira.view.style.Estilo;
 
 import javax.swing.CellRendererPane;
@@ -22,6 +23,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
@@ -30,8 +32,10 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PanelDigrafo extends JPanel {
     private static final int MARGEN = 10;
@@ -40,33 +44,47 @@ public class PanelDigrafo extends JPanel {
     private static final int ALTO_NOMBRE = 34;
     private static final double RADIO_DEL_HALO = 0.78;
     private static final float[] PUNTEADO = {7f, 6f};
+    private static final int ESCALONADO_DE_FOTOS = 110;
+    private static final int DURACION_DE_FOTO = 520;
+    private static final int INICIO_DE_LA_CADENA = 700;
+    private static final int PASO_DE_LA_CADENA = 420;
+    private static final int DURACION_DE_FLECHA = 640;
+    private static final int DURACION_DE_GLOBO = 320;
+    private static final int DURACION_DEL_REALCE = 420;
 
     private enum Estado { APAGADA, NORMAL, ENTRANTE, SALIENTE }
 
     private enum Lado { ARRIBA, DERECHA, IZQUIERDA }
 
-
-
     private final PantallaRonda ronda;
     private final CellRendererPane pintor = new CellRendererPane();
-    private final JLabel textoDeGlobo = new JLabel();
+    private final TextoAjustable textoDeGlobo = new TextoAjustable("", Estilo.TEXTO, 190, false);
     private final Map<Personaje, Rectangle> fotos = new HashMap<>();
     private final Map<Personaje, Rectangle> globos = new HashMap<>();
     private final Map<Personaje, Lado> lados = new HashMap<>();
-    private final Map<Personaje, Integer> anchosDeTexto = new HashMap<>();
     private Personaje bajoElMouse;
     private JComponent herramientas;
+    private List<Personaje> ordenDeLaCadena;
+    private Animacion entrada;
+    private boolean entradaPendiente;
+    private double tiempoDeEntrada = Double.MAX_VALUE;
+    private double opacidadDeLineas = 1;
+    private boolean fotosOcultas;
+    private int anchoCalculado = -1;
+    private int altoCalculado = -1;
 
     public PanelDigrafo(PantallaRonda ronda) {
         super(null);
         this.ronda = ronda;
         setOpaque(false);
         add(pintor);
-        textoDeGlobo.setFont(Estilo.TEXTO);
-        textoDeGlobo.setVerticalAlignment(JLabel.TOP);
         MouseAdapter raton = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (entrada != null && entrada.estaCorriendo()) {
+                    entrada.completar();
+                    return;
+                }
                 Personaje p = personajeEn(e.getPoint());
                 if (p != null) ronda.seleccionar(p);
             }
@@ -89,6 +107,83 @@ public class PanelDigrafo extends JPanel {
         };
         addMouseListener(raton);
         addMouseMotionListener(raton);
+    }
+
+    public void animarEntrada() {
+        entradaPendiente = true;
+        tiempoDeEntrada = 0;
+        repaint();
+    }
+
+    public void setOpacidadDeLineas(double opacidad) {
+        opacidadDeLineas = Math.max(0, Math.min(1, opacidad));
+        repaint();
+    }
+
+    public void setFotosOcultas(boolean ocultas) {
+        fotosOcultas = ocultas;
+        repaint();
+    }
+
+    public Rectangle getRectanguloDeFoto(Personaje p) {
+        calcularUbicaciones();
+        Rectangle foto = fotos.get(p);
+        return new Rectangle(foto.x, foto.y, foto.width, Avatar.alto(foto.width, false));
+    }
+
+    private void empezarEntradaSiHaceFalta() {
+        if (!entradaPendiente) return;
+        entradaPendiente = false;
+        double duracion = finDeLasFlechas() + DURACION_DEL_REALCE;
+        entrada = Animacion.iniciar((int) duracion, t -> {
+            tiempoDeEntrada = t * duracion;
+            repaint();
+        }, () -> {
+            tiempoDeEntrada = Double.MAX_VALUE;
+            repaint();
+        });
+    }
+
+    private double finDeLasFlechas() {
+        return INICIO_DE_LA_CADENA + (ronda.getPersonajes().size() - 1) * PASO_DE_LA_CADENA + DURACION_DE_FLECHA;
+    }
+
+    private double avance(double desde, double duracion) {
+        return Animacion.tramo(tiempoDeEntrada, desde, desde + duracion);
+    }
+
+    private double momentoDe(Personaje p) {
+        return INICIO_DE_LA_CADENA + ordenDeLaCadena().indexOf(p) * PASO_DE_LA_CADENA;
+    }
+
+    private List<Personaje> ordenDeLaCadena() {
+        if (ordenDeLaCadena != null) return ordenDeLaCadena;
+        List<Personaje> personajes = ronda.getPersonajes();
+        Set<Personaje> orden = new LinkedHashSet<>();
+        Personaje actual = personajes.get(0);
+        while (actual != null) {
+            orden.add(actual);
+            Personaje siguiente = null;
+            for (GrafoPersonajes.Arista a : ronda.getGrafo().getAristas()) {
+                if (a.getOrigen() == actual && !orden.contains(a.getDestino())) {
+                    siguiente = a.getDestino();
+                    break;
+                }
+            }
+            if (siguiente == null) {
+                siguiente = personajes.stream().filter(p -> !orden.contains(p)).findFirst().orElse(null);
+            }
+            actual = siguiente;
+        }
+        ordenDeLaCadena = new ArrayList<>(orden);
+        return ordenDeLaCadena;
+    }
+
+    private static Graphics2D conOpacidad(Graphics2D g, double opacidad) {
+        Graphics2D copia = (Graphics2D) g.create();
+        float alfa = (float) Math.max(0, Math.min(1, opacidad));
+        copia.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alfa));
+        return copia;
     }
 
     public void setHerramientas(JComponent herramientas) {
@@ -118,13 +213,14 @@ public class PanelDigrafo extends JPanel {
         return null;
     }
 
-    private String htmlDeGlobo(Personaje p, int anchoTexto) {
-        String texto = ronda.getAfirmacion(p).getTexto(Estilo::nombreHtml);
-        if (anchoTexto <= 0) return "<html><nobr>" + texto + "</nobr></html>";
-        return "<html><div style='width:" + anchoTexto + "px'>" + texto + "</div></html>";
+    private String htmlDeGlobo(Personaje p) {
+        return ronda.getAfirmacion(p).getTexto(Estilo::nombreHtml);
     }
 
     private void calcularUbicaciones() {
+        if (getWidth() == anchoCalculado && getHeight() == altoCalculado && !fotos.isEmpty()) return;
+        anchoCalculado = getWidth();
+        altoCalculado = getHeight();
         fotos.clear();
         globos.clear();
         lados.clear();
@@ -137,20 +233,10 @@ public class PanelDigrafo extends JPanel {
 
         Map<Personaje, Dimension> tamaniosDeGlobo = new HashMap<>();
         int altoGloboMaximo = 0;
+        textoDeGlobo.setAnchoMaximo(anchoTexto);
         for (Personaje p : ronda.getPersonajes()) {
-            textoDeGlobo.setText(htmlDeGlobo(p, 0));
+            textoDeGlobo.setHtml(htmlDeGlobo(p));
             Dimension texto = textoDeGlobo.getPreferredSize();
-            if (texto.width > anchoTexto) {
-                int anchoDelDiv = anchoTexto;
-                do {
-                    textoDeGlobo.setText(htmlDeGlobo(p, anchoDelDiv));
-                    texto = textoDeGlobo.getPreferredSize();
-                    anchoDelDiv -= 8;
-                } while (texto.width > anchoTexto && anchoDelDiv > 60);
-                anchosDeTexto.put(p, anchoDelDiv + 8);
-            } else {
-                anchosDeTexto.put(p, 0);
-            }
             Dimension globo = new Dimension(texto.width + 26, texto.height + 18);
             tamaniosDeGlobo.put(p, globo);
             altoGloboMaximo = Math.max(altoGloboMaximo, globo.height);
@@ -196,34 +282,62 @@ public class PanelDigrafo extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        empezarEntradaSiHaceFalta();
         calcularUbicaciones();
         Graphics2D g2 = (Graphics2D) g.create();
         Estilo.suavizar(g2);
 
+        double realce = avance(finDeLasFlechas(), DURACION_DEL_REALCE);
         Personaje seleccionado = ronda.getSeleccionado();
         List<GrafoPersonajes.Arista> aristas = new ArrayList<>(ronda.getGrafo().getAristas());
         aristas.sort(Comparator.comparing(a -> estadoDe(a, seleccionado)));
-        for (GrafoPersonajes.Arista a : aristas) dibujarArista(g2, a, estadoDe(a, seleccionado));
+        for (GrafoPersonajes.Arista a : aristas) {
+            double crecimiento = Animacion.suave(avance(momentoDe(a.getOrigen()), DURACION_DE_FLECHA));
+            if (crecimiento > 0) dibujarArista(g2, a, estadoDe(a, seleccionado), crecimiento, Animacion.suave(realce));
+        }
 
         for (Personaje p : ronda.getPersonajes()) {
             Rectangle foto = fotos.get(p);
             if (p == seleccionado || p == bajoElMouse) {
-                double radio = Math.max(foto.width, foto.height) * RADIO_DEL_HALO;
+                double radio = Math.max(foto.width, foto.height) * RADIO_DEL_HALO
+                        * Animacion.interpolar(0.6, 1, Animacion.frenando(realce));
                 Color c = p.getColor();
-                g2.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), p == seleccionado ? 90 : 45));
-                g2.fill(new Ellipse2D.Double(foto.getCenterX() - radio, foto.getCenterY() - radio, radio * 2, radio * 2));
+                Graphics2D gh = conOpacidad(g2, realce * opacidadDeLineas);
+                gh.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), p == seleccionado ? 90 : 45));
+                gh.fill(new Ellipse2D.Double(foto.getCenterX() - radio, foto.getCenterY() - radio, radio * 2, radio * 2));
+                gh.dispose();
             }
         }
-        for (Personaje p : ronda.getPersonajes()) {
+        List<Personaje> personajes = ronda.getPersonajes();
+        for (int i = 0; i < personajes.size(); i++) {
+            Personaje p = personajes.get(i);
             Rectangle foto = fotos.get(p);
-            Graphics2D gf = (Graphics2D) g2.create();
-            gf.translate(foto.x, foto.y);
-            Avatar.pintar(gf, p, foto.width, false, ronda.getMarca(p));
-            gf.dispose();
-            dibujarNombre(g2, p, foto, p == seleccionado);
-            dibujarGlobo(g2, p, p == seleccionado);
+            double aparicion = avance(i * ESCALONADO_DE_FOTOS, DURACION_DE_FOTO);
+            if (aparicion <= 0) continue;
+            if (!fotosOcultas) dibujarFoto(g2, p, foto, aparicion);
+            Graphics2D gn = conOpacidad(g2, Animacion.frenando(aparicion) * opacidadDeLineas);
+            dibujarNombre(gn, p, foto, p == seleccionado && realce > 0.5);
+            gn.dispose();
+            double globo = Animacion.frenando(avance(momentoDe(p), DURACION_DE_GLOBO));
+            if (globo > 0) {
+                Graphics2D gg = conOpacidad(g2, globo * opacidadDeLineas);
+                gg.translate(0, (1 - globo) * 10);
+                dibujarGlobo(gg, p, p == seleccionado && realce > 0.5);
+                gg.dispose();
+            }
         }
         g2.dispose();
+    }
+
+    private void dibujarFoto(Graphics2D g, Personaje p, Rectangle foto, double aparicion) {
+        int alto = Avatar.alto(foto.width, false);
+        double escala = Animacion.interpolar(0.55, 1, Animacion.conRebote(aparicion));
+        Graphics2D gf = conOpacidad(g, Animacion.frenando(Math.min(1, aparicion * 1.6)));
+        gf.translate(foto.getCenterX(), foto.y + alto / 2.0);
+        gf.scale(escala, escala);
+        gf.translate(-foto.width / 2.0, -alto / 2.0);
+        Avatar.pintar(gf, p, foto.width, false, ronda.getMarca(p));
+        gf.dispose();
     }
 
     private void dibujarNombre(Graphics2D g, Personaje p, Rectangle foto, boolean seleccionado) {
@@ -281,7 +395,7 @@ public class PanelDigrafo extends JPanel {
         g.setStroke(new BasicStroke(conAviso || seleccionado ? 2.6f : 1.4f));
         g.draw(forma);
 
-        textoDeGlobo.setText(htmlDeGlobo(p, anchosDeTexto.get(p)));
+        textoDeGlobo.setHtml(htmlDeGlobo(p));
         textoDeGlobo.setForeground(Estilo.TINTA);
         pintor.paintComponent(g, textoDeGlobo, this, globo.x + 13, globo.y + 9, globo.width - 26, globo.height - 18);
     }
@@ -293,32 +407,35 @@ public class PanelDigrafo extends JPanel {
         return Estado.APAGADA;
     }
 
-    private void dibujarArista(Graphics2D g, GrafoPersonajes.Arista a, Estado estado) {
-        Color color = Estilo.texto(a.afirmaQueDiceVerdad() ? Estilo.VERDE : Estilo.ROJO);
-        float opacidad = switch (estado) {
+    private void dibujarArista(Graphics2D g, GrafoPersonajes.Arista a, Estado estado, double crecimiento, double realce) {
+        Color color = switch (a.getTipo()) {
+            case DICE_QUE_DICE_LA_VERDAD -> Estilo.texto(Estilo.VERDE);
+            case DICE_QUE_MIENTE -> Estilo.texto(Estilo.ROJO);
+            case DESCRIBE_UN_RASGO -> Estilo.TINTA_SUAVE;
+        };
+        float opacidadFinal = switch (estado) {
             case APAGADA -> 0.16f;
             case NORMAL -> 0.85f;
             case ENTRANTE, SALIENTE -> 1f;
         };
-        float grosor = switch (estado) {
+        float grosorFinal = switch (estado) {
             case SALIENTE -> 4.5f;
             case ENTRANTE -> 3f;
             default -> 2.4f;
         };
+        double opacidad = Animacion.interpolar(0.9, opacidadFinal, realce) * opacidadDeLineas;
+        if (opacidad <= 0) return;
+        float grosor = (float) Animacion.interpolar(2.8, grosorFinal, realce);
         Composite anterior = g.getComposite();
-        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacidad));
+        g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacidad));
         g.setColor(color);
-        g.setStroke(estado == Estado.ENTRANTE
+        g.setStroke(estado == Estado.ENTRANTE && realce > 0.5
                 ? new BasicStroke(grosor, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, PUNTEADO, 0f)
                 : new BasicStroke(grosor, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         Rectangle desde = agrandar(fotos.get(a.getOrigen()), 5);
         if (a.getOrigen() == a.getDestino()) {
-            double r = 18;
-            boolean haciaLaDerecha = desde.getCenterX() < getWidth() / 2.0;
-            double cx = haciaLaDerecha ? desde.getMaxX() + r - 6 : desde.getMinX() - r + 6;
-            double cy = desde.getMinY() + desde.height * 0.35;
-            g.draw(new Ellipse2D.Double(cx - r, cy - r, r * 2, r * 2));
+            dibujarBucle(g, desde, crecimiento, grosor);
             g.setComposite(anterior);
             return;
         }
@@ -334,8 +451,9 @@ public class PanelDigrafo extends JPanel {
 
         double inicio = 0;
         while (inicio < 1 && desde.contains(punto(p0, control, p2, inicio))) inicio += 0.005;
-        double fin = 1;
-        while (fin > inicio && hasta.contains(punto(p0, control, p2, fin))) fin -= 0.005;
+        double finCompleto = 1;
+        while (finCompleto > inicio && hasta.contains(punto(p0, control, p2, finCompleto))) finCompleto -= 0.005;
+        double fin = inicio + (finCompleto - inicio) * crecimiento;
 
         Path2D camino = new Path2D.Double();
         Point2D primero = punto(p0, control, p2, inicio);
@@ -348,9 +466,31 @@ public class PanelDigrafo extends JPanel {
         camino.lineTo(punta.getX(), punta.getY());
         g.draw(camino);
         g.setStroke(new BasicStroke(1f));
-        dibujarPunta(g, punto(p0, control, p2, fin - 0.03), punta, 8 + grosor * 1.6);
+        double largoDePunta = (8 + grosor * 1.6) * Animacion.tramo(crecimiento, 0, 0.15);
+        if (largoDePunta > 0) dibujarPunta(g, punto(p0, control, p2, Math.max(inicio, fin - 0.03)), punta, largoDePunta);
         g.setComposite(anterior);
 
+    }
+
+    private void dibujarBucle(Graphics2D g, Rectangle foto, double crecimiento, float grosor) {
+        double radio = Math.max(24, foto.width * 0.36);
+        boolean haciaLaDerecha = foto.getCenterX() <= getWidth() / 2.0;
+        double cx = haciaLaDerecha ? foto.getMaxX() : foto.getMinX();
+        double cy = foto.getMinY();
+        double inicio = haciaLaDerecha ? 270 : 0;
+        double recorrido = 270 * crecimiento;
+        g.draw(new Arc2D.Double(cx - radio, cy - radio, radio * 2, radio * 2, inicio, recorrido, Arc2D.OPEN));
+        double largoDePunta = (8 + grosor * 1.6) * Animacion.tramo(crecimiento, 0, 0.15);
+        if (largoDePunta <= 0) return;
+        Point2D punta = puntoDelArco(cx, cy, radio, inicio + recorrido);
+        Point2D antes = puntoDelArco(cx, cy, radio, inicio + recorrido - 12);
+        g.setStroke(new BasicStroke(1f));
+        dibujarPunta(g, antes, punta, largoDePunta);
+    }
+
+    private static Point2D puntoDelArco(double cx, double cy, double radio, double grados) {
+        double angulo = Math.toRadians(grados);
+        return new Point2D.Double(cx + radio * Math.cos(angulo), cy - radio * Math.sin(angulo));
     }
 
     private static Rectangle agrandar(Rectangle r, int margen) {

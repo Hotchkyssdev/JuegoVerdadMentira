@@ -4,12 +4,16 @@ import verdadmentira.domain.Afirmacion;
 import verdadmentira.domain.GrafoPersonajes;
 import verdadmentira.domain.Personaje;
 import verdadmentira.service.Juego;
+import verdadmentira.view.animacion.Animacion;
+import verdadmentira.view.animacion.CapaDeTransicion;
 import verdadmentira.view.component.Avatar;
 import verdadmentira.view.component.Boton;
 import verdadmentira.view.component.Burbuja;
 import verdadmentira.view.component.IconoDePeligro;
 import verdadmentira.view.component.PanelArbol;
 import verdadmentira.view.component.PanelDigrafo;
+import verdadmentira.view.component.PanelTransparente;
+import verdadmentira.view.component.TextoAjustable;
 import verdadmentira.view.style.Estilo;
 
 import javax.swing.BorderFactory;
@@ -18,9 +22,13 @@ import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import javax.swing.Scrollable;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -29,10 +37,15 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagLayout;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -44,7 +57,10 @@ import java.util.function.IntSupplier;
 
 public class PantallaRonda extends JPanel {
     private static final int ANCHO_DETALLE = 350;
-    private static final int ANCHO_TEXTO_DETALLE = 255;
+    private static final int DURACION_DEL_DIFUMINADO = 450;
+    private static final int DURACION_DEL_VUELO = 950;
+    private static final int ESCALONADO_DEL_VUELO = 90;
+    private static final int LADO_AL_ATERRIZAR = 24;
 
     private final Juego juego;
     private final int ronda;
@@ -56,6 +72,7 @@ public class PantallaRonda extends JPanel {
     private final Map<Personaje, Afirmacion> afirmaciones = new LinkedHashMap<>();
     private final Map<Personaje, PanelArbol> arboles = new HashMap<>();
     private final Map<Personaje, JPanel> celdasDeArbol = new HashMap<>();
+    private final Map<Personaje, PanelTransparente> celdasVisibles = new HashMap<>();
     private final Map<Personaje, JLabel> nombresDeArbol = new HashMap<>();
     private final IntSupplier pistasRestantes;
     private final Runnable gastarPista;
@@ -65,6 +82,8 @@ public class PantallaRonda extends JPanel {
     private final JLabel mensaje = new JLabel(" ");
     private final Boton confirmar = new Boton("Confirmar ronda", Estilo.PRINCIPAL, true);
     private final Boton pista;
+    private final PanelTransparente detalleVisible;
+    private final PanelTransparente pieVisible;
     private Personaje seleccionado;
 
     public PantallaRonda(Juego juego, int ronda, Map<Personaje, Boolean> marcas,
@@ -95,17 +114,22 @@ public class PantallaRonda extends JPanel {
         desplazable.getViewport().setOpaque(false);
         desplazable.getVerticalScrollBar().setUnitIncrement(16);
         JPanel tarjetaDetalle = tarjeta(desplazable);
-        tarjetaDetalle.setPreferredSize(new Dimension(ANCHO_DETALLE, 0));
+        detalleVisible = new PanelTransparente(tarjetaDetalle);
+        detalleVisible.setPreferredSize(new Dimension(ANCHO_DETALLE, 0));
 
         JPanel centro = new JPanel(new BorderLayout(16, 0));
         centro.setOpaque(false);
         centro.add(digrafo, BorderLayout.CENTER);
-        centro.add(tarjetaDetalle, BorderLayout.EAST);
+        centro.add(detalleVisible, BorderLayout.EAST);
         add(centro, BorderLayout.CENTER);
 
         JPanel franja = new JPanel(new GridLayout(1, getPersonajes().size(), 10, 0));
         franja.setOpaque(false);
-        for (Personaje p : getPersonajes()) franja.add(celdaDeArbol(p));
+        for (Personaje p : getPersonajes()) {
+            PanelTransparente celda = new PanelTransparente(celdaDeArbol(p));
+            celdasVisibles.put(p, celda);
+            franja.add(celda);
+        }
 
         contador.setFont(Estilo.TEXTO);
         contador.setForeground(Estilo.TINTA_SUAVE);
@@ -143,17 +167,109 @@ public class PantallaRonda extends JPanel {
         pie.add(izquierda, BorderLayout.WEST);
         pie.add(botones, BorderLayout.EAST);
 
+        pieVisible = new PanelTransparente(pie);
         JPanel sur = new JPanel();
         sur.setOpaque(false);
         sur.setLayout(new BoxLayout(sur, BoxLayout.Y_AXIS));
         franja.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pie.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pieVisible.setAlignmentX(Component.LEFT_ALIGNMENT);
         sur.add(franja);
         sur.add(Box.createVerticalStrut(12));
-        sur.add(pie);
+        sur.add(pieVisible);
         add(sur, BorderLayout.SOUTH);
 
         refrescar();
+    }
+
+    public void animarEntrada() {
+        digrafo.animarEntrada();
+    }
+
+    public Map<Personaje, PanelTransparente> getCeldasDeArbol() {
+        return celdasVisibles;
+    }
+
+    public void animarConfirmacion(Runnable alTerminar) {
+        JRootPane raiz = SwingUtilities.getRootPane(this);
+        if (raiz == null) {
+            alTerminar.run();
+            return;
+        }
+        CapaDeTransicion capa = CapaDeTransicion.de(raiz);
+        capa.mostrar(g -> { });
+        Animacion.iniciar(DURACION_DEL_DIFUMINADO, t -> {
+            double visible = 1 - Animacion.suave(t);
+            digrafo.setOpacidadDeLineas(visible);
+            detalleVisible.setOpacidad(visible);
+            pieVisible.setOpacidad(visible);
+            pista.setVisible(visible > 0);
+        }, () -> volarFotos(capa, alTerminar));
+    }
+
+    private void volarFotos(CapaDeTransicion capa, Runnable alTerminar) {
+        List<Personaje> personajes = getPersonajes();
+        Map<Personaje, Rectangle> desde = new HashMap<>();
+        Map<Personaje, Point2D> hasta = new HashMap<>();
+        for (Personaje p : personajes) {
+            desde.put(p, SwingUtilities.convertRectangle(digrafo, digrafo.getRectanguloDeFoto(p), capa));
+            PanelArbol arbol = arboles.get(p);
+            Point raizDelArbol = SwingUtilities.convertPoint(arbol, arbol.getCentroDeRaiz(), capa);
+            hasta.put(p, raizDelArbol);
+        }
+        digrafo.setFotosOcultas(true);
+        double duracion = DURACION_DEL_VUELO + (personajes.size() - 1) * ESCALONADO_DEL_VUELO;
+        Animacion.iniciar((int) duracion, t -> {
+            double tiempo = t * duracion;
+            capa.mostrar(g -> {
+                for (int i = 0; i < personajes.size(); i++) {
+                    Personaje p = personajes.get(i);
+                    double inicio = i * ESCALONADO_DEL_VUELO;
+                    double avance = Animacion.tramo(tiempo, inicio, inicio + DURACION_DEL_VUELO);
+                    if (avance >= 0.82) arboles.get(p).setFotoVisible(true);
+                    dibujarVuelo(g, p, desde.get(p), hasta.get(p), avance);
+                }
+            });
+        }, alTerminar);
+    }
+
+    private void dibujarVuelo(Graphics2D g, Personaje p, Rectangle foto, Point2D destino, double avance) {
+        double recorrido = Animacion.suave(Animacion.tramo(avance, 0, 0.82));
+        Point2D origen = new Point2D.Double(foto.getCenterX(), foto.getCenterY());
+        Point2D control = new Point2D.Double(destino.getX(), origen.getY());
+        double u = 1 - recorrido;
+        double x = u * u * origen.getX() + 2 * u * recorrido * control.getX() + recorrido * recorrido * destino.getX();
+        double y = u * u * origen.getY() + 2 * u * recorrido * control.getY() + recorrido * recorrido * destino.getY();
+        double ancho = Animacion.interpolar(foto.width, LADO_AL_ATERRIZAR, recorrido);
+        double escala = ancho / foto.width;
+        double opacidad = 1 - Animacion.tramo(avance, 0.78, 0.92);
+
+        if (opacidad > 0) {
+            Graphics2D gf = (Graphics2D) g.create();
+            gf.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacidad));
+            gf.translate(x, y);
+            gf.scale(escala, escala);
+            gf.translate(-foto.width / 2.0, -foto.height / 2.0);
+            Avatar.pintar(gf, p, foto.width, false, marcas.get(p));
+            gf.dispose();
+        }
+
+        double pulso = Animacion.tramo(avance, 0.8, 1);
+        if (pulso > 0 && pulso < 1) {
+            double radio = Animacion.interpolar(10, 34, Animacion.frenando(pulso));
+            Color c = p.getColor();
+            Graphics2D gp = (Graphics2D) g.create();
+            gp.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), (int) (170 * (1 - pulso))));
+            gp.setStroke(new BasicStroke(3f));
+            gp.draw(new Ellipse2D.Double(destino.getX() - radio, destino.getY() - radio, radio * 2, radio * 2));
+            gp.dispose();
+        }
+    }
+
+    public BufferedImage fotografiarSinCeldas(CapaDeTransicion capa, JComponent pantalla) {
+        celdasVisibles.values().forEach(c -> c.setOpacidad(0));
+        BufferedImage imagen = capa.fotografiar(pantalla);
+        celdasVisibles.values().forEach(c -> c.setOpacidad(1));
+        return imagen;
     }
 
     public List<Personaje> getPersonajes() {
@@ -312,7 +428,8 @@ public class PantallaRonda extends JPanel {
         StringBuilder dicen = new StringBuilder();
         for (Afirmacion otra : afirmaciones.values()) {
             if (otra.getEmisor() == p) continue;
-            boolean loNombra = otra.getReferencias().stream().anyMatch(r -> r.objetivo() == p);
+            boolean loNombra = otra.getReferencias().stream().anyMatch(r -> r.objetivo() == p)
+                    || otra.esHechoVisible() && otra.getHecho().objetivo() == p;
             if (loNombra) {
                 dicen.append(Estilo.nombreHtml(otra.getEmisor())).append(": «")
                         .append(otra.getTexto(Estilo::nombreHtml)).append("»<br>");
@@ -402,8 +519,7 @@ public class PantallaRonda extends JPanel {
     }
 
     private static JLabel texto(String html, Font fuente) {
-        JLabel etiqueta = new JLabel("<html><div style='width:" + ANCHO_TEXTO_DETALLE + "px'>" + html + "</div></html>");
-        etiqueta.setFont(fuente);
+        JLabel etiqueta = new TextoAjustable(html, fuente, ANCHO_DETALLE - 40, true);
         etiqueta.setForeground(Estilo.TINTA);
         return etiqueta;
     }

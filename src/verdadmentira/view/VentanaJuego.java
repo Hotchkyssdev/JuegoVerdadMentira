@@ -4,10 +4,13 @@ import verdadmentira.domain.Afirmacion;
 import verdadmentira.domain.ArbolDecisiones;
 import verdadmentira.domain.Personaje;
 import verdadmentira.service.Juego;
+import verdadmentira.view.animacion.Animacion;
+import verdadmentira.view.animacion.CapaDeTransicion;
 import verdadmentira.view.component.Avatar;
 import verdadmentira.view.component.Boton;
 import verdadmentira.view.component.Burbuja;
 import verdadmentira.view.component.PanelArbol;
+import verdadmentira.view.component.PanelTransparente;
 import verdadmentira.view.style.Estilo;
 
 import javax.swing.BorderFactory;
@@ -22,21 +25,34 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
+import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class VentanaJuego extends JFrame {
     private static final int PISTAS_POR_PARTIDA = 3;
+
+    private static final int DURACION_DE_LA_SUBIDA = 950;
+    private static final int ESCALONADO_DE_LA_SUBIDA = 70;
+
+    private record SalidaDeRonda(BufferedImage pantalla, Rectangle ubicacionDePantalla,
+                                 Map<Personaje, Rectangle> celdas, Map<Personaje, BufferedImage> imagenesDeCeldas) { }
 
     private record PasoDePractica(String texto, Boolean mcLovin, Boolean roz, Boolean lisa, boolean contradiccion) { }
 
@@ -135,7 +151,7 @@ public class VentanaJuego extends JFrame {
         Boton practicar = new Boton("Practicar primero", Estilo.TINTA_SUAVE, false);
         practicar.addActionListener(e -> mostrarPractica(0));
         Boton empezar = new Boton("Empezar", Estilo.PRINCIPAL, true);
-        empezar.addActionListener(e -> mostrarRonda());
+        empezar.addActionListener(e -> mostrarRonda(true));
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         botones.setOpaque(false);
         botones.add(reglas);
@@ -243,38 +259,53 @@ public class VentanaJuego extends JFrame {
         boolean ultimo = paso == pasos.length - 1;
         Boton siguiente = new Boton(ultimo ? "Empezar a jugar" : "Siguiente", Estilo.PRINCIPAL, true);
         siguiente.addActionListener(e -> {
-            if (ultimo) mostrarRonda();
+            if (ultimo) mostrarRonda(true);
             else mostrarPractica(paso + 1);
         });
         pantalla.add(pie(null, anterior, siguiente), BorderLayout.SOUTH);
         mostrar(pantalla);
     }
 
-    private void mostrarRonda() {
-        pantallaActual = this::mostrarRonda;
+    private void mostrarRonda(boolean conEntrada) {
+        pantallaActual = () -> mostrarRonda(false);
         enInicio = false;
         partidaEnCurso = true;
         JPanel pantalla = pantalla("Ronda " + (ronda + 1) + " de " + Juego.RONDAS, null, Estilo.TINTA);
-        PantallaRonda contenido = new PantallaRonda(juego, ronda, marcas,
+        PantallaRonda[] contenido = new PantallaRonda[1];
+        contenido[0] = new PantallaRonda(juego, ronda, marcas,
                 () -> pistasRestantes,
                 () -> pistasRestantes--,
-                () -> {
+                () -> contenido[0].animarConfirmacion(() -> {
                     juego.registrarDecisiones(ronda, marcas);
                     marcas.clear();
-                    mostrarArboles();
-                });
-        pantalla.add(contenido, BorderLayout.CENTER);
+                    mostrarArboles(salidaDe(contenido[0]));
+                }));
+        pantalla.add(contenido[0], BorderLayout.CENTER);
         mostrar(pantalla);
+        if (conEntrada) contenido[0].animarEntrada();
     }
 
-    private void mostrarArboles() {
-        pantallaActual = this::mostrarArboles;
+    private SalidaDeRonda salidaDe(PantallaRonda contenido) {
+        CapaDeTransicion capa = CapaDeTransicion.de(getRootPane());
+        Map<Personaje, Rectangle> celdas = new HashMap<>();
+        Map<Personaje, BufferedImage> imagenes = new HashMap<>();
+        contenido.getCeldasDeArbol().forEach((p, celda) -> {
+            celdas.put(p, capa.ubicacionDe(celda));
+            imagenes.put(p, capa.fotografiar(celda));
+        });
+        JComponent pantalla = (JComponent) getContentPane();
+        return new SalidaDeRonda(contenido.fotografiarSinCeldas(capa, pantalla), capa.ubicacionDe(pantalla), celdas, imagenes);
+    }
+
+    private void mostrarArboles(SalidaDeRonda salida) {
+        pantallaActual = () -> mostrarArboles(null);
         boolean ultima = ronda == Juego.RONDAS - 1;
         JPanel pantalla = pantalla("Tus decisiones después de la ronda " + (ronda + 1),
                 "Cada árbol es un personaje y cada nivel es una ronda: a la izquierda lo marcaste "
                         + "<b>mentiroso</b>, a la derecha <b>veraz</b>. El juego no te dice si acertaste.", Estilo.TINTA);
 
-        pantalla.add(filaDeArboles(false), BorderLayout.CENTER);
+        Map<Personaje, PanelTransparente> tarjetas = new HashMap<>();
+        pantalla.add(filaDeArboles(false, tarjetas), BorderLayout.CENTER);
 
         Boton seguir = new Boton(ultima ? "Elegir al que hace las dos cosas" : "Ir a la ronda " + (ronda + 2), Estilo.PRINCIPAL, true);
         seguir.addActionListener(e -> {
@@ -282,28 +313,94 @@ public class VentanaJuego extends JFrame {
                 mostrarEleccion();
             } else {
                 ronda++;
-                mostrarRonda();
+                mostrarRonda(true);
             }
         });
         pantalla.add(pie(null, seguir), BorderLayout.SOUTH);
         mostrar(pantalla);
+        if (salida != null) animarSubida(salida, tarjetas);
+    }
+
+    private void animarSubida(SalidaDeRonda salida, Map<Personaje, PanelTransparente> tarjetas) {
+        validate();
+        CapaDeTransicion capa = CapaDeTransicion.de(getRootPane());
+        Map<Personaje, Rectangle> destinos = new HashMap<>();
+        Map<Personaje, BufferedImage> imagenesDestino = new HashMap<>();
+        tarjetas.forEach((p, tarjeta) -> {
+            destinos.put(p, capa.ubicacionDe(tarjeta));
+            imagenesDestino.put(p, capa.fotografiar((Component) tarjeta.getComponent(0)));
+            tarjeta.setOpacidad(0);
+        });
+        List<Personaje> personajes = juego.getPersonajes();
+        double duracion = DURACION_DE_LA_SUBIDA + (personajes.size() - 1) * ESCALONADO_DE_LA_SUBIDA;
+        Animacion.iniciar((int) duracion, t -> {
+            double tiempo = t * duracion;
+            capa.mostrar(g -> {
+                double anterior = 1 - Animacion.suave(Animacion.tramo(t, 0, 0.55));
+                if (anterior > 0) dibujarImagen(g, salida.pantalla(), salida.ubicacionDePantalla(), anterior, false);
+                for (int i = 0; i < personajes.size(); i++) {
+                    Personaje p = personajes.get(i);
+                    double inicio = i * ESCALONADO_DE_LA_SUBIDA;
+                    double avance = Animacion.suave(Animacion.tramo(tiempo, inicio, inicio + DURACION_DE_LA_SUBIDA));
+                    Rectangle desde = salida.celdas().get(p);
+                    Rectangle hasta = destinos.get(p);
+                    Rectangle actual = new Rectangle(
+                            (int) Math.round(Animacion.interpolar(desde.x, hasta.x, avance)),
+                            (int) Math.round(Animacion.interpolar(desde.y, hasta.y, avance)),
+                            (int) Math.round(Animacion.interpolar(desde.width, hasta.width, avance)),
+                            (int) Math.round(Animacion.interpolar(desde.height, hasta.height, avance)));
+                    g.setColor(Estilo.TARJETA);
+                    g.fill(actual);
+                    g.setColor(Estilo.BORDE);
+                    g.draw(new Rectangle(actual.x, actual.y, actual.width - 1, actual.height - 1));
+                    dibujarImagen(g, salida.imagenesDeCeldas().get(p), actual, 1 - Animacion.tramo(avance, 0, 0.5), true);
+                    dibujarImagen(g, imagenesDestino.get(p), actual, Animacion.tramo(avance, 0.35, 1), true);
+                }
+            });
+        }, () -> {
+            tarjetas.values().forEach(tarjeta -> tarjeta.setOpacidad(1));
+            capa.terminar();
+        });
+    }
+
+    private static void dibujarImagen(Graphics2D g, BufferedImage imagen, Rectangle zona, double opacidad, boolean ajustar) {
+        if (opacidad <= 0 || imagen == null) return;
+        Graphics2D gi = (Graphics2D) g.create();
+        gi.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) Math.min(1, opacidad)));
+        gi.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        if (!ajustar) {
+            gi.drawImage(imagen, zona.x, zona.y, zona.width, zona.height, null);
+        } else {
+            double proporcion = (double) imagen.getWidth() / imagen.getHeight();
+            double ancho = zona.width;
+            double alto = ancho / proporcion;
+            if (alto > zona.height) {
+                alto = zona.height;
+                ancho = alto * proporcion;
+            }
+            gi.drawImage(imagen, (int) Math.round(zona.getCenterX() - ancho / 2), (int) Math.round(zona.getCenterY() - alto / 2),
+                    (int) Math.round(ancho), (int) Math.round(alto), null);
+        }
+        gi.dispose();
     }
 
     private void mostrarEleccion() {
         pantallaActual = this::mostrarEleccion;
         JPanel pantalla = pantalla("¿Quién puede mentir y también decir la verdad?",
                 "Es el único que cambió de una ronda a otra. Mirá tus árboles y elegilo.", Estilo.TINTA);
-        pantalla.add(filaDeArboles(true), BorderLayout.CENTER);
+        pantalla.add(filaDeArboles(true, null), BorderLayout.CENTER);
         mostrar(pantalla);
     }
 
-    private JPanel filaDeArboles(boolean conBotonDeEleccion) {
+    private JPanel filaDeArboles(boolean conBotonDeEleccion, Map<Personaje, PanelTransparente> tarjetas) {
         JPanel columnas = new JPanel(new GridLayout(1, juego.getPersonajes().size(), 12, 0));
         columnas.setOpaque(false);
         for (Personaje p : juego.getPersonajes()) {
             JPanel columna = new JPanel(new BorderLayout(0, 10));
             columna.setOpaque(false);
-            columna.add(tarjeta(PanelArbol.grande(p, juego.getArbol(p))), BorderLayout.CENTER);
+            PanelTransparente tarjeta = new PanelTransparente(tarjeta(PanelArbol.grande(p, juego.getArbol(p))));
+            if (tarjetas != null) tarjetas.put(p, tarjeta);
+            columna.add(tarjeta, BorderLayout.CENTER);
             if (conBotonDeEleccion) {
                 Boton elegir = new Boton("Es " + p.getNombre(), Estilo.colorDeNombre(p), false);
                 elegir.addActionListener(e -> mostrarResultado(p));
@@ -311,9 +408,18 @@ public class VentanaJuego extends JFrame {
             }
             columnas.add(columna);
         }
-        JPanel centro = new JPanel(new BorderLayout());
+        if (conBotonDeEleccion) {
+            JPanel centro = new JPanel(new BorderLayout());
+            centro.setOpaque(false);
+            centro.add(columnas, BorderLayout.NORTH);
+            return centro;
+        }
+        JPanel centro = new JPanel(new GridBagLayout());
         centro.setOpaque(false);
-        centro.add(columnas, BorderLayout.NORTH);
+        GridBagConstraints restricciones = new GridBagConstraints();
+        restricciones.fill = GridBagConstraints.HORIZONTAL;
+        restricciones.weightx = 1;
+        centro.add(columnas, restricciones);
         return centro;
     }
 
@@ -397,7 +503,7 @@ public class VentanaJuego extends JFrame {
         Boton otra = new Boton("Jugar de nuevo", Estilo.PRINCIPAL, true);
         otra.addActionListener(e -> {
             reiniciar();
-            mostrarRonda();
+            mostrarRonda(true);
         });
         pantalla.add(pie(null, inicio, otra), BorderLayout.SOUTH);
         mostrar(pantalla);
@@ -517,6 +623,7 @@ public class VentanaJuego extends JFrame {
 
     private void mostrar(JComponent pantalla) {
         if (animacion != null) animacion.stop();
+        CapaDeTransicion.quitar(getRootPane());
         setContentPane(pantalla);
         revalidate();
         repaint();

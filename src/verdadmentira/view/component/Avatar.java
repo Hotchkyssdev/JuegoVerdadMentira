@@ -80,7 +80,7 @@ public class Avatar extends JComponent {
         int lado = anchoTarjeta - 2 * margen;
         g2.setColor(personaje.getColor());
         g2.fillRect(margen, margen, lado, lado);
-        double escalaDePantalla = g2.getTransform().getScaleX();
+        double escalaDePantalla = Math.max(1, Math.ceil(g2.getTransform().getScaleX() * 4) / 4);
         int ladoEnPixeles = (int) Math.round(lado * escalaDePantalla);
         fotoEscalada(personaje, ladoEnPixeles, ladoEnPixeles)
                 .ifPresent(foto -> g2.drawImage(foto, margen, margen, lado, lado, null));

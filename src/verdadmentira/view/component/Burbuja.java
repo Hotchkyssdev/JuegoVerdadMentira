@@ -19,7 +19,7 @@ import java.awt.geom.RoundRectangle2D;
 
 public class Burbuja extends JPanel {
     private static final int COLA = 12;
-    private static final int ANCHO_TEXTO = 330;
+    private static final int ANCHO_TEXTO = 430;
 
     private final Personaje personaje;
     private final JLabel consecuencias;
@@ -35,12 +35,10 @@ public class Burbuja extends JPanel {
         JLabel nombre = new JLabel("<html>" + Estilo.nombreHtml(personaje) + " dice:</html>");
         nombre.setFont(Estilo.CHICA_NEGRITA);
         nombre.setForeground(Estilo.TINTA_SUAVE);
-        JLabel frase = new JLabel(envolver(afirmacion.getTexto(Estilo::nombreHtml)));
-        frase.setFont(Estilo.FRASE);
+        JLabel frase = new TextoAjustable(afirmacion.getTexto(Estilo::nombreHtml), Estilo.FRASE, ANCHO_TEXTO, false);
         frase.setForeground(Estilo.TINTA);
 
-        consecuencias = new JLabel(envolver("<br>" + consecuenciasHtml(afirmacion)));
-        consecuencias.setFont(Estilo.CHICA);
+        consecuencias = new TextoAjustable("<br>" + consecuenciasHtml(afirmacion), Estilo.CHICA, ANCHO_TEXTO, false);
         consecuencias.setForeground(Estilo.TINTA_SUAVE);
         consecuencias.setVisible(false);
 
@@ -57,9 +55,6 @@ public class Burbuja extends JPanel {
         add(aviso);
     }
 
-    private static String envolver(String html) {
-        return "<html><div style='width:" + ANCHO_TEXTO + "px'>" + html + "</div></html>";
-    }
 
     public static String consecuenciasHtml(Afirmacion afirmacion) {
         if (afirmacion.esHechoVisible()) {
@@ -86,7 +81,7 @@ public class Burbuja extends JPanel {
     }
 
     public void setAviso(String texto) {
-        aviso.setText(texto == null ? "" : envolver("<br>" + texto));
+        aviso.setText(texto == null ? "" : "<html><br>" + texto + "</html>");
         aviso.setVisible(texto != null);
         revalidate();
         repaint();
