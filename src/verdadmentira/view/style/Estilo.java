@@ -5,9 +5,12 @@ import verdadmentira.domain.Personaje;
 import javax.swing.JLabel;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.RenderingHints;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,7 +30,9 @@ public final class Estilo {
     public static Color VERDE_CLARO;
     public static Color AMARILLO_CLARO;
 
-    private static final String LETRA_DE_NOMBRES = letraAMano();
+    private static final String LETRA_INCLUIDA = "/verdadmentira/view/fuentes/Kalam-Bold.ttf";
+    private static final Font LETRA_A_MANO = letraAMano();
+    private static final String LETRA_DE_NOMBRES = LETRA_A_MANO.getFamily();
 
     public static final Font TITULO = new Font("SansSerif", Font.BOLD, 28);
     public static final Font TEXTO = new Font("SansSerif", Font.PLAIN, 15);
@@ -36,7 +41,7 @@ public final class Estilo {
     public static final Font CHICA = new Font("SansSerif", Font.PLAIN, 12);
     public static final Font CHICA_NEGRITA = new Font("SansSerif", Font.BOLD, 12);
     public static final Font MINI_NEGRITA = new Font("SansSerif", Font.BOLD, 10);
-    public static final Font NOMBRE = new Font(LETRA_DE_NOMBRES, Font.BOLD, 15);
+    public static final Font NOMBRE = LETRA_A_MANO.deriveFont(15f);
 
     private static boolean oscuro;
 
@@ -76,12 +81,17 @@ public final class Estilo {
         }
     }
 
-    private static String letraAMano() {
+    private static Font letraAMano() {
         List<String> disponibles = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
-        for (String familia : List.of("Segoe Print", "Ink Free", "Comic Sans MS")) {
-            if (disponibles.contains(familia)) return familia;
+        if (disponibles.contains("Segoe Print")) return new Font("Segoe Print", Font.BOLD, 15);
+        try (InputStream entrada = Estilo.class.getResourceAsStream(LETRA_INCLUIDA)) {
+            if (entrada == null) return new Font(Font.SANS_SERIF, Font.BOLD, 15);
+            Font incluida = Font.createFont(Font.TRUETYPE_FONT, entrada);
+            GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(incluida);
+            return incluida.deriveFont(15f);
+        } catch (IOException | FontFormatException e) {
+            return new Font(Font.SANS_SERIF, Font.BOLD, 15);
         }
-        return Font.SANS_SERIF;
     }
 
     public static boolean esOscuro() {

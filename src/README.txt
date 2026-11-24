@@ -45,3 +45,15 @@ lo que viaja entre pantallas y que bloquea los clics mientras dura.
   y cada foto vuela a la raíz de su árbol. VentanaJuego registra la ronda y
   hace subir los árboles al centro de la pantalla de resumen.
 
+Versión web:
+La carpeta web/ publica el mismo juego en el navegador con CheerpJ 5.0, que
+ejecuta la aplicación Swing con Java 21 sobre WebAssembly. index.html carga
+CheerpJ desde su CDN y corre web/verdad-o-mentira.jar.
+- Armar el .jar (no se versiona):  bash web/construir.sh
+- Probar en local (hace falta un servidor con peticiones por rango):
+  npx http-server web -c-1
+- Publicar en Vercel:  cd web && vercel deploy --prod
+Segoe Print no existe en el navegador: los nombres usan Kalam
+(view/fuentes, licencia SIL OFL en OFL.txt), que el juego carga si Segoe
+Print no está instalada.
+
