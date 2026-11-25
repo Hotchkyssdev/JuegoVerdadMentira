@@ -7,6 +7,19 @@ se elige al que cambió de una ronda a otra.
 
 **Jugalo en el navegador:** https://verdad-o-mentira-five.vercel.app
 
+**Informe técnico** (formato de los archivos, costo Big-O, salidas de Markov y decisiones de
+diseño): [docs/devlog.docx](docs/devlog.docx)
+
+## Integrantes
+
+| Integrante | Qué programó |
+| --- | --- |
+| Medina Martínez, Emiliano Joel | `estructuras` y `grafos` |
+| Zago, Valentín Ignacio | `arboles` y `tokens` |
+| Hotchkyss, Gersom Tomás | `markov` y `juego.reglas.rumores` |
+| Moreyra, Lautaro Román | `juego.reglas` (personajes, ronda, partida, deducción) y `juego.pantallas` |
+| Grossetti, Ignacio Arturo | `persistencia`, `juego.reglas.registro` y `pruebas` |
+
 Está hecho en Java 11 o superior, solo con la librería estándar. Lo armamos sobre el kit de
 la cátedra ([jmgoya/Game-Java](https://github.com/jmgoya/Game-Java)) y usamos nuestras
 propias Lista, Pila y Cola.
