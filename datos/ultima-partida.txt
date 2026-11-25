@@ -1,0 +1,2 @@
+# Última partida: un árbol de decisiones por línea, en pre-orden con # en los hijos vacíos.
+# Formato: Nombre;V|M|#;... (V = veraz, derecha; M = mentiroso, izquierda)

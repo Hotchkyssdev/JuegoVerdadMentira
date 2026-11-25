@@ -1,0 +1,22 @@
+# Relaciones: grafo dirigido y ponderado, una arista por línea.
+# Formato: origen;destino;peso (veces que el origen ya nombró al destino)
+McLovin;Roz;0
+McLovin;Albert;0
+McLovin;Lisa;0
+McLovin;Ferb;0
+Roz;McLovin;0
+Roz;Albert;0
+Roz;Lisa;0
+Roz;Ferb;0
+Albert;McLovin;0
+Albert;Roz;0
+Albert;Lisa;0
+Albert;Ferb;0
+Lisa;McLovin;0
+Lisa;Roz;0
+Lisa;Albert;0
+Lisa;Ferb;0
+Ferb;McLovin;0
+Ferb;Roz;0
+Ferb;Albert;0
+Ferb;Lisa;0

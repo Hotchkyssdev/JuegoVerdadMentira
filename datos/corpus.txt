@@ -1,0 +1,53 @@
+# Corpus de rumores para el modelo de Markov, un rumor por línea.
+# Las líneas con @ son expresiones de varias palabras que cuentan como un solo token.
+@ sala de profesores
+@ máquina de café
+@ a escondidas
+@ la semana pasada
+@ el kiosco de la esquina
+@ de golpe
+Dicen que Lisa escondió las llaves del laboratorio en una maceta.
+Dicen que Albert se durmió en la sala de profesores con la boca abierta.
+Dicen que McLovin compró tres alfajores en el kiosco de la esquina y no convidó a nadie.
+Dicen que Ferb arregló la máquina de café con un clip y un chicle.
+Dicen que Roz tiene una libreta con los cumpleaños de todo el curso.
+Cuentan que Albert perdió el paraguas la semana pasada y culpó al viento.
+Cuentan que Lisa toca el saxo a escondidas en el gimnasio.
+Cuentan que Ferb no habló en toda la mañana y después cantó un tango entero.
+Cuentan que McLovin se anotó en el torneo de ajedrez sin saber mover el caballo.
+Cuentan que Roz regó las plantas del patio a las seis de la mañana.
+Se comenta que la máquina de café hace ruidos raros cuando pasa Albert.
+Se comenta que en la sala de profesores alguien dejó un paquete de facturas.
+Se comenta que McLovin y Ferb se cambiaron las mochilas la semana pasada.
+Se comenta que Lisa ganó la rifa del kiosco de la esquina dos veces seguidas.
+Se comenta que Roz encontró un gato en el depósito y lo llamó Profesor.
+Alguien vio a Ferb pintando un mural a escondidas en el pasillo.
+Alguien vio a Albert comiendo una medialuna de golpe, sin respirar.
+Alguien vio a Lisa y a Roz anotando cosas en un cuaderno verde.
+Alguien vio a McLovin practicando un saludo frente al espejo del baño.
+Alguien vio a Roz llevando una caja enorme a la sala de profesores.
+Parece que el cuaderno verde de Lisa tiene planos del colegio.
+Parece que Albert guarda caramelos de menta en todos los bolsillos.
+Parece que Ferb sabe abrir la ventana del laboratorio desde afuera.
+Parece que McLovin tiene un primo que trabaja en el kiosco de la esquina.
+Parece que Roz se aprendió de memoria el horario de todos los colectivos.
+Me dijeron que la semana pasada se cortó la luz y nadie notó nada.
+Me dijeron que Lisa y Albert discutieron por el último lugar del estacionamiento.
+Me dijeron que Ferb tiene un pez que se llama Martes.
+Me dijeron que McLovin llegó tarde porque se quedó mirando una paloma.
+Me dijeron que Roz dejó una nota misteriosa en la máquina de café.
+Dicen que la nota de la máquina de café decía que alguien se llevó las tizas.
+Dicen que las tizas aparecieron de golpe en la mochila de Albert.
+Dicen que Ferb y Lisa armaron un robot con latas en el recreo.
+Dicen que el robot de latas saluda cuando pasa McLovin.
+Cuentan que Roz y McLovin se pelearon por el control del proyector.
+Cuentan que el gato del depósito duerme en la silla de Albert.
+Cuentan que Lisa organizó una colecta para el gato del depósito.
+Se comenta que Ferb escribe poemas en las servilletas del bar.
+Se comenta que Albert sabe silbar con las dos manos.
+Se comenta que Roz nunca usa el ascensor, ni siquiera con la caja enorme.
+Alguien vio a Lisa saliendo del laboratorio con un frasco que brillaba.
+Alguien vio a McLovin vendiendo figuritas repetidas a escondidas.
+Parece que el frasco que brillaba era jugo de naranja con una linterna.
+Me dijeron que Albert y Ferb van a abrir un puesto de empanadas.
+Me dijeron que en la sala de profesores hay un cajón que nadie pudo abrir.

@@ -1,0 +1,9 @@
+# Progreso del jugador entre partidas.
+# Formato: clave=valor
+jugador=Detective
+partidasJugadas=0
+partidasGanadas=0
+rachaActual=0
+mejorRacha=0
+ordenDeMarkov=3
+modoDeMarkov=tokens

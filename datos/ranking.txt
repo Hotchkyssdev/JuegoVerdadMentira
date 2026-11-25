@@ -1,0 +1,2 @@
+# Ranking: ABB en pre-orden, una línea por nodo.
+# Formato: puntos;partida;jugador
