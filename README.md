@@ -5,6 +5,8 @@ cinco personajes: dos siempre dicen la verdad, dos siempre mienten y uno hace la
 En cada una de las tres rondas todos dicen una frase y hay que marcar quién miente. Al final
 se elige al que cambió de una ronda a otra.
 
+**Jugalo en el navegador:** https://verdad-o-mentira-five.vercel.app
+
 Está hecho en Java 11 o superior, solo con la librería estándar. Lo armamos sobre el kit de
 la cátedra ([jmgoya/Game-Java](https://github.com/jmgoya/Game-Java)) y usamos nuestras
 propias Lista, Pila y Cola.
